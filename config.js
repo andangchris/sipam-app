@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 // GANTI DENGAN URL DARI DEPLOY MENGGUNAKAN AKUN andangchris91
-const API_URL_ORIGIN = "https://script.google.com/macros/s/AKfycbye_wTs4dqTAEOOBzj0n1DYxLcuWRRWfHeD5B2x1qDjPm9iYBLB9V1Is4GA4RQ8bS3z/exec";
+const API_URL_ORIGIN = "https://script.google.com/macros/s/AKfycbyFBST8V6Ztf73USATcMsyfS-hPBv-6BVeSzJVUA8_LVAT9WutU72frAhw0EmsBYur4/exec";
 
 // Gunakan JSONP (sudah terbukti berhasil dengan akun 91)
 const USE_JSONP = true;
