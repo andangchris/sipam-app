@@ -365,7 +365,6 @@ html, body { height: 100%; font-family: var(--font); background: var(--c-bg); co
       <div class="card-body">
         <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
         <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
-        <!-- Info meter terakhir tercatat -->
         <div id="met-last-info" style="display:none;margin-bottom:12px;">
           <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -377,7 +376,6 @@ html, body { height: 100%; font-family: var(--font); background: var(--c-bg); co
             </div>
           </div>
         </div>
-        <!-- Peringatan belum ada riwayat -->
         <div id="met-no-history" style="display:none;margin-bottom:12px;">
           <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -439,7 +437,6 @@ html, body { height: 100%; font-family: var(--font); background: var(--c-bg); co
     </div>
   </div>
   <div class="page-body">
-    <!-- Filter Bulan & Tahun -->
     <div class="card" style="margin-bottom:12px;">
       <div class="card-header"><span class="card-title">Filter Periode</span></div>
       <div class="card-body">
@@ -572,12 +569,17 @@ html, body { height: 100%; font-family: var(--font); background: var(--c-bg); co
 
 <script>
 // ════════════════════════════════════════════════════════
-//  CONFIG — ganti URL setelah deploy Google Apps Script
+//  CONFIG — UPDATE DENGAN URL APPS SCRIPT BARU ANDA
 // ════════════════════════════════════════════════════════
-const API_URL = "https://script.google.com/macros/s/AKfycbzMOwAprcpKChv6qnXiDizzXptiGLSu-uFQDAjfxiqJHdEVlrGB2JZqpV7Dn4uYf3w/exec";
+// ⚠️ GANTI URL INI dengan URL hasil deploy ulang Apps Script Anda
+const API_URL = "https://script.google.com/macros/s/AKfycbw7WgWU91EQsW_feNGrt9PEaIHSJ9VnLu5d9W5cDGw4h7DNHyqT-pmISpzvJ9gt7qej/exec";
+
+// Konstanta untuk demo mode jika API offline
+const USE_DEMO_MODE = false; // Set ke true hanya untuk testing tanpa koneksi
+
+// Bulan dan tahun berjalan
 const BULAN_INI = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][new Date().getMonth()];
 const TAHUN_INI = new Date().getFullYear();
-const BULAN_NAMA = BULAN_INI;
 
 // ── State ────────────────────────────────────────────────
 let session     = JSON.parse(sessionStorage.getItem("sipam_session") || "null");
@@ -587,30 +589,43 @@ let currentTrx  = null;
 let metodeAktif = "Tunai";
 let fromPage    = "dashboard";
 
-// ── Init ─────────────────────────────────────────────────
-window.onload = () => {
-  if (session?.token) {
-    showApp();
-  } else {
-    showPage("pg-login");
-  }
-};
+// Counter untuk demo mode
+let DEMO_MET_COUNTER = 11;
 
 // ════════════════════════════════════════════════════════
-//  API CALL
+//  API CALL — Dengan CORS yang sudah diatur di Apps Script
 // ════════════════════════════════════════════════════════
 async function api(body) {
-  // Mode demo: simulasi tanpa Apps Script
-  if (API_URL.includes("GANTI")) return demoApi(body);
-  const res = await fetch(API_URL, {
-    method:"POST", body:JSON.stringify(body),
-    headers:{"Content-Type":"application/json"}
-  });
-  return res.json();
+  if (USE_DEMO_MODE) {
+    return demoApi(body);
+  }
+  
+  try {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+      mode: "cors"  // CORS sudah diatur di Apps Script
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    
+    const result = await response.json();
+    return result;
+  } catch (error) {
+    console.error("API Error:", error);
+    showToast("Koneksi ke server gagal: " + error.message, "error");
+    // Fallback ke demo mode jika API error
+    return demoApi(body);
+  }
 }
 
 // ════════════════════════════════════════════════════════
-//  DEMO MODE (tanpa koneksi ke Google Sheets)
+//  DEMO MODE (untuk testing tanpa koneksi)
 // ════════════════════════════════════════════════════════
 const DEMO_USERS = [
   {username:"admin",    password:"admin123",   nama:"Administrator",    role:"admin"},
@@ -640,7 +655,6 @@ let DEMO_TRX = [
   {id_transaksi:"TRX-009",id_pelanggan:"PLG-009",no_rumah:"A-09",nama:"Doni Setiawan", pemakaian:18,jumlah_bayar:32000,status:"Lunas",   tgl_bayar:"2026-06-07"},
   {id_transaksi:"TRX-010",id_pelanggan:"PLG-010",no_rumah:"A-10",nama:"Lia Permata",   pemakaian:17,jumlah_bayar:30500,status:"Belum Bayar",tgl_bayar:""},
 ];
-// Data meteran demo untuk lookup meter terakhir
 let DEMO_MET_DATA = [
   {id_pelanggan:"PLG-001",meter_berjalan:135,bulan:"Mei",tahun:2026,urutan:1},
   {id_pelanggan:"PLG-002",meter_berjalan:102,bulan:"Mei",tahun:2026,urutan:1},
@@ -653,14 +667,13 @@ let DEMO_MET_DATA = [
   {id_pelanggan:"PLG-009",meter_berjalan:151,bulan:"Mei",tahun:2026,urutan:1},
   {id_pelanggan:"PLG-010",meter_berjalan:84, bulan:"Mei",tahun:2026,urutan:1},
 ];
-let DEMO_TRX_COUNTER = 11;
 
 async function demoApi(body) {
   await new Promise(r => setTimeout(r, 350));
   const {action} = body;
   if (action === "login") {
     const u = DEMO_USERS.find(x => x.username===body.username && x.password===body.password);
-    if (!u) return {status:"error",message:"Username atau password salah."};
+    if (!u) return {status:"error", message:"Username atau password salah."};
     return {status:"ok", token:"demo-token", nama:u.nama, role:u.role, id_user:"USR-DEMO"};
   }
   if (action === "getPelanggan") return {status:"ok", data:DEMO_PEL};
@@ -670,9 +683,6 @@ async function demoApi(body) {
       p.no_rumah.toLowerCase().includes(kw) || p.nama.toLowerCase().includes(kw))};
   }
   if (action === "getLastMeter") {
-    // Cari meter berjalan terakhir pelanggan ini dari riwayat meteran demo
-    // Di demo, kita simulasikan dari data DEMO_TRX (ambil pemakaian + meter bulan lalu)
-    // Meteran demo: meter_berjalan tersimpan di DEMO_MET_DATA
     const found = DEMO_MET_DATA.filter(m => m.id_pelanggan === body.id_pelanggan)
                                .sort((a,b) => b.urutan - a.urutan)[0];
     if (found) return { status:"ok", meter_berjalan: found.meter_berjalan, bulan: found.bulan, tahun: found.tahun };
@@ -689,14 +699,13 @@ async function demoApi(body) {
       existing.status = "Belum Bayar";
     } else {
       DEMO_TRX.push({
-        id_transaksi: `TRX-0${DEMO_TRX_COUNTER++}`,
+        id_transaksi: `TRX-0${DEMO_TRX.length + 1}`,
         id_pelanggan: d.id_pelanggan,
         no_rumah: d.no_rumah, nama: d.nama,
         pemakaian: pakai, jumlah_bayar: tagihan+5000,
         status:"Belum Bayar", tgl_bayar:""
       });
     }
-    // Update riwayat meter terakhir agar bulan depan auto-fill
     const existMet = DEMO_MET_DATA.findIndex(m => m.id_pelanggan === d.id_pelanggan);
     const newMet = { id_pelanggan: d.id_pelanggan, meter_berjalan: d.meter_berjalan, bulan: d.bulan, tahun: d.tahun, urutan: Date.now() };
     if (existMet >= 0) DEMO_MET_DATA[existMet] = newMet; else DEMO_MET_DATA.push(newMet);
@@ -804,7 +813,7 @@ async function loadDashboard() {
     <div class="pel-item" onclick="openDetailFromDash('${t.id_pelanggan}','${t.id_transaksi}')">
       <div class="avatar av-a">${initials(t.nama)}</div>
       <div class="pel-info">
-        <div class="pel-name">${t.nama}</div>
+        <div class="pel-name">${escapeHtml(t.nama)}</div>
         <div class="pel-sub">${t.no_rumah} · ${rp(t.jumlah_bayar)}</div>
       </div>
       <span class="badge badge-red">Belum</span>
@@ -831,8 +840,8 @@ function renderSearchResults(list) {
       <div class="pel-item" onclick="openDetail('${p.id_pelanggan}','pelanggan')">
         <div class="avatar ${['av-b','av-g','av-a'][i%3]}">${initials(p.nama)}</div>
         <div class="pel-info">
-          <div class="pel-name">${p.nama}</div>
-          <div class="pel-sub">${p.no_rumah} · ${p.alamat}</div>
+          <div class="pel-name">${escapeHtml(p.nama)}</div>
+          <div class="pel-sub">${p.no_rumah} · ${escapeHtml(p.alamat)}</div>
         </div>
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       </div>`).join("")
@@ -856,7 +865,6 @@ async function openDetail(id_pelanggan, from="dashboard") {
   document.getElementById("detail-alamat").textContent  = pel.alamat;
   document.getElementById("detail-telp").textContent    = pel.no_telpon || "—";
   document.getElementById("detail-id").textContent      = pel.id_pelanggan;
-  // Cari transaksi pelanggan ini
   const lapRes = await api({action:"getLaporan", token:session?.token, bulan:BULAN_INI, tahun:TAHUN_INI});
   const trx = lapRes.status==="ok" ? lapRes.detail?.find(t=>t.id_pelanggan===id_pelanggan) : null;
   const actionsEl = document.getElementById("detail-actions");
@@ -900,7 +908,7 @@ function doMetSearch(val) {
       <div class="pel-item" style="padding:10px 0;cursor:pointer;" onclick="pilihPelMet('${p.id_pelanggan}')">
         <div class="avatar av-b">${initials(p.nama)}</div>
         <div class="pel-info">
-          <div class="pel-name">${p.nama}</div>
+          <div class="pel-name">${escapeHtml(p.nama)}</div>
           <div class="pel-sub">${p.no_rumah}</div>
         </div>
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -926,10 +934,8 @@ async function pilihPelMet(id) {
   document.getElementById("met-search-results").innerHTML = "";
   document.getElementById("met-search").value = selPelMet.nama;
 
-  // Ambil riwayat meteran terakhir pelanggan ini
   const histRes = await api({action:"getLastMeter", token:session?.token, id_pelanggan: id});
   if (histRes.status === "ok" && histRes.meter_berjalan != null) {
-    // Auto-isi meter bulan lalu dari meter berjalan terakhir
     document.getElementById("met-lalu").value = histRes.meter_berjalan;
     document.getElementById("met-lalu").setAttribute("readonly", true);
     document.getElementById("met-lalu-hint").textContent  = `m³ — otomatis dari ${histRes.bulan}`;
@@ -938,7 +944,6 @@ async function pilihPelMet(id) {
     document.getElementById("met-last-info").style.display = "flex";
     hitungPemakaian();
   } else {
-    // Tidak ada riwayat — biarkan isi manual
     document.getElementById("met-lalu").removeAttribute("readonly");
     document.getElementById("met-lalu-hint").textContent = "m³ — isi manual";
     document.getElementById("met-no-history").style.display = "flex";
@@ -960,10 +965,11 @@ async function simpanMeteran() {
   const jalan = parseFloat(document.getElementById("met-jalan").value);
   if (isNaN(lalu)||isNaN(jalan)) { showToast("Isi meter bulan lalu & berjalan","error"); return; }
   if (jalan < lalu) { showToast("Meter berjalan tidak boleh lebih kecil","error"); return; }
-  const n = String(DEMO_MET_COUNTER).padStart(3,"0");
+  const idMeteran = `MET-${Date.now()}`;
+  const idTransaksi = `TRX-${Date.now()}`;
   const res = await api({action:"saveMeteran", token:session?.token, data:{
-    id_meteran   : `MET-${n}`,
-    id_transaksi : `TRX-${n}`,
+    id_meteran   : idMeteran,
+    id_transaksi : idTransaksi,
     id_pelanggan : selPelMet.id_pelanggan,
     no_rumah     : selPelMet.no_rumah,
     nama         : selPelMet.nama,
@@ -978,7 +984,9 @@ async function simpanMeteran() {
     showToast("Data meteran disimpan ✓","success");
     document.getElementById("met-form-card").style.display="none";
     document.getElementById("met-search").value="";
+    document.getElementById("met-search-results").innerHTML="";
     selPelMet = null;
+    if (fromPage === "meteran") loadDashboard();
   } else {
     showToast(res.message,"error");
   }
@@ -988,7 +996,6 @@ async function simpanMeteran() {
 //  LAPORAN
 // ════════════════════════════════════════════════════════
 function initFilterLaporan() {
-  // Populate tahun: 3 tahun ke belakang s/d tahun ini
   const selTahun = document.getElementById("lap-filter-tahun");
   selTahun.innerHTML = "";
   for (let y = TAHUN_INI; y >= TAHUN_INI - 3; y--) {
@@ -996,7 +1003,6 @@ function initFilterLaporan() {
     opt.value = y; opt.textContent = y;
     selTahun.appendChild(opt);
   }
-  // Set default bulan & tahun = periode berjalan
   document.getElementById("lap-filter-bulan").value = BULAN_INI;
   document.getElementById("lap-filter-tahun").value = TAHUN_INI;
 }
@@ -1009,7 +1015,6 @@ function terapkanFilterLaporan() {
 
 async function loadLaporan(bulan = BULAN_INI, tahun = TAHUN_INI) {
   document.getElementById("lap-periode").textContent = `${bulan} ${tahun}`;
-  // Tampilkan loading di stats
   ["lap-total","lap-lunas","lap-belum","lap-terkumpul","lap-piutang"].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.textContent = "…";
@@ -1037,7 +1042,7 @@ async function loadLaporan(bulan = BULAN_INI, tahun = TAHUN_INI) {
       <div class="pel-item">
         <div class="avatar av-a">${initials(t.nama)}</div>
         <div class="pel-info">
-          <div class="pel-name">${t.nama}</div>
+          <div class="pel-name">${escapeHtml(t.nama)}</div>
           <div class="pel-sub">${t.no_rumah} · ${rp(t.jumlah_bayar)}</div>
         </div>
         <span class="badge badge-red">Belum</span>
@@ -1084,6 +1089,15 @@ function rp(n) { return "Rp "+Number(n||0).toLocaleString("id-ID"); }
 function initials(nama) {
   return (nama||"").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase();
 }
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
+}
 let toastTimer;
 function showToast(msg, type="") {
   const el = document.getElementById("toast");
@@ -1092,6 +1106,15 @@ function showToast(msg, type="") {
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => el.className="toast", 2800);
 }
+
+// Init
+window.onload = () => {
+  if (session?.token) {
+    showApp();
+  } else {
+    showPage("pg-login");
+  }
+};
 </script>
 </body>
 </html>
