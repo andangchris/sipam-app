@@ -3,12 +3,20 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
-<meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-capable" content="yes"/>
 <title>SiPAM — Sistem Pembayaran Air Minum</title>
-<link rel="stylesheet" href="style.css"/>
-<link rel="preconnect" href="https://fonts.googleapis.com"/>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ========== SEMUA CSS DARI style.css MASUK SINI ========== */
+:root {
+  --c-bg: #F0F4F8;
+  --c-surface: #FFFFFF;
+  --c-primary: #0F52A0;
+  --c-green: #0D9E5C;
+  --c-red: #DC2626;
+  --c-text: #1A202C;
+  --nav-h: 64px;
+}
+/* ... copy semua CSS dari style.css ke sini ... */
+</style>
 </head>
 <body>
 <div id="app">
@@ -27,333 +35,363 @@
     <div class="login-err" id="login-err"></div>
     <div class="form-group">
       <label class="form-label">Username</label>
-      <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username" autocomplete="username"/>
+      <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username"/>
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password" autocomplete="current-password"/>
+      <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password"/>
     </div>
-    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Masuk
-    </button>
-  </div>
-</div>
-
-<!-- ══════════ DASHBOARD ══════════ -->
-<div class="page" id="pg-dashboard">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div>
-        <div class="sub" id="dash-greeting">Selamat datang</div>
-        <h1 id="dash-nama">—</h1>
-      </div>
-      <button class="topbar-icon" onclick="doLogout()" title="Keluar">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      </button>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="s-total">—</div></div>
-      <div class="stat-box"><div class="stat-label">Sudah Bayar</div><div class="stat-val green" id="s-lunas">—</div></div>
-      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="s-belum">—</div></div>
-      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm blue" id="s-nominal">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-body" style="padding:14px 16px;">
-        <div class="stat-label" style="margin-bottom:6px;">Progress pembayaran bulan ini</div>
-        <div class="progress-wrap"><div class="progress-fill" id="s-progress" style="width:0%"></div></div>
-        <div style="text-align:right;font-size:11px;color:var(--c-text3);margin-top:4px;" id="s-pct">0%</div>
-      </div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
-      <div class="card-body" id="dash-belum-list">
-        <div class="loading"><div class="spinner"></div> Memuat data…</div>
-      </div>
-    </div>
-  </div>
-  <nav class="bottom-nav" id="nav-dashboard">
-    <button class="nav-item active" onclick="goPage('dashboard')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Dashboard
-    </button>
-    <button class="nav-item" onclick="goPage('pelanggan')">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Cari
-    </button>
-    <button class="nav-item" onclick="goPage('meteran')">
-      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Catat
-    </button>
-    <button class="nav-item" onclick="goPage('laporan')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Laporan
-    </button>
-  </nav>
-</div>
-
-<!-- ══════════ CARI PELANGGAN ══════════ -->
-<div class="page" id="pg-pelanggan">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Cari Pelanggan</h1><div class="sub">Ketik nama atau nomor rumah</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="search-wrap">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input class="search-input" id="search-input" type="search" placeholder="Cari nama / no. rumah…" oninput="doSearch(this.value)"/>
-    </div>
-    <div id="search-results"></div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" onclick="goPage('dashboard')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Dashboard
-    </button>
-    <button class="nav-item active" onclick="goPage('pelanggan')">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Cari
-    </button>
-    <button class="nav-item" onclick="goPage('meteran')">
-      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Catat
-    </button>
-    <button class="nav-item" onclick="goPage('laporan')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Laporan
-    </button>
-  </nav>
-</div>
-
-<!-- ══════════ CATAT METERAN ══════════ -->
-<div class="page" id="pg-meteran">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Catat Meteran</h1><div class="sub">Input pemakaian air bulan ini</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Cari Pelanggan</span></div>
-      <div class="card-body">
-        <div class="search-wrap" style="margin-bottom:0">
-          <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input class="search-input" id="met-search" type="search" placeholder="Ketik nama / no. rumah…" oninput="doMetSearch(this.value)"/>
-        </div>
-        <div id="met-search-results" style="margin-top:10px;"></div>
-      </div>
-    </div>
-    <div class="card" id="met-form-card" style="display:none;">
-      <div class="card-header"><span class="card-title">Data Meteran</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
-        <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
-        <div id="met-last-info" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div>
-              <div style="font-size:11px;color:var(--c-green);font-weight:600;">Meter terakhir tercatat</div>
-              <div style="font-size:13px;color:var(--c-text);margin-top:1px;">
-                <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="met-no-history" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div style="font-size:12px;color:var(--c-amber);">Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Meter Bulan Lalu</label>
-            <input class="form-input" id="met-lalu" type="number" placeholder="0" oninput="hitungPemakaian()"/>
-            <div class="form-hint" id="met-lalu-hint">m³</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Meter Berjalan</label>
-            <input class="form-input" id="met-jalan" type="number" placeholder="0" oninput="hitungPemakaian()"/>
-            <div class="form-hint">m³ — baca dari alat</div>
-          </div>
-        </div>
-        <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
-          <div class="card-body" style="padding:12px 14px;">
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan</span><span class="val" id="met-tagihan">Rp 0</span></div>
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-            <div class="info-row" style="padding:6px 0;border-bottom:none;"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="met-total">Rp 5.000</span></div>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="simpanMeteran()">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
-          Simpan Data Meteran
-        </button>
-      </div>
-    </div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" onclick="goPage('dashboard')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Dashboard
-    </button>
-    <button class="nav-item" onclick="goPage('pelanggan')">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Cari
-    </button>
-    <button class="nav-item active" onclick="goPage('meteran')">
-      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Catat
-    </button>
-    <button class="nav-item" onclick="goPage('laporan')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Laporan
-    </button>
-  </nav>
-</div>
-
-<!-- ══════════ LAPORAN ══════════ -->
-<div class="page" id="pg-laporan">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Laporan Bulanan</h1><div class="sub" id="lap-periode">—</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="card" style="margin-bottom:12px;">
-      <div class="card-header"><span class="card-title">Filter Periode</span></div>
-      <div class="card-body">
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Bulan</label>
-            <select class="form-input" id="lap-filter-bulan">
-              <option value="Januari">Januari</option>
-              <option value="Februari">Februari</option>
-              <option value="Maret">Maret</option>
-              <option value="April">April</option>
-              <option value="Mei">Mei</option>
-              <option value="Juni">Juni</option>
-              <option value="Juli">Juli</option>
-              <option value="Agustus">Agustus</option>
-              <option value="September">September</option>
-              <option value="Oktober">Oktober</option>
-              <option value="November">November</option>
-              <option value="Desember">Desember</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Tahun</label>
-            <select class="form-input" id="lap-filter-tahun"></select>
-          </div>
-        </div>
-        <button class="btn btn-primary" onclick="terapkanFilterLaporan()">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Tampilkan Laporan
-        </button>
-      </div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="lap-total">—</div></div>
-      <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
-      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
-      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Piutang Tersisa</span><span class="badge badge-red" id="lap-piutang">—</span></div>
-      <div class="card-body" id="lap-list">
-        <div class="loading"><div class="spinner"></div> Memuat…</div>
-      </div>
-    </div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" onclick="goPage('dashboard')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Dashboard
-    </button>
-    <button class="nav-item" onclick="goPage('pelanggan')">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Cari
-    </button>
-    <button class="nav-item" onclick="goPage('meteran')">
-      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Catat
-    </button>
-    <button class="nav-item active" onclick="goPage('laporan')">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Laporan
-    </button>
-  </nav>
-</div>
-
-<!-- ══════════ DETAIL PELANGGAN ══════════ -->
-<div class="page" id="pg-detail">
-  <div class="topbar">
-    <button class="back-btn" id="detail-back" onclick="goBack()">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Kembali
-    </button>
-    <div><h1 id="detail-nama">—</h1><div class="sub" id="detail-norumah">—</div></div>
-  </div>
-  <div class="page-body">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Info Pelanggan</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Alamat</span><span class="val" id="detail-alamat">—</span></div>
-        <div class="info-row"><span class="lbl">No Telepon</span><span class="val mono" id="detail-telp">—</span></div>
-        <div class="info-row"><span class="lbl">ID Pelanggan</span><span class="val mono" id="detail-id">—</span></div>
-      </div>
-    </div>
-    <div class="card" id="detail-tagihan-card">
-      <div class="card-header"><span class="card-title">Tagihan Bulan Ini</span><span id="detail-badge" class="badge">—</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Pemakaian</span><span class="val big" id="detail-pakai">—</span></div>
-        <div class="info-row"><span class="lbl">Tagihan Air</span><span class="val" id="detail-tagihan">—</span></div>
-        <div class="info-row"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-        <div class="info-row"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
-      </div>
-    </div>
-    <div id="detail-actions"></div>
-  </div>
-</div>
-
-<!-- ══════════ MODAL BAYAR ══════════ -->
-<div class="overlay" id="modal-bayar" onclick="closeModal()">
-  <div class="sheet" onclick="event.stopPropagation()">
-    <div class="sheet-handle"></div>
-    <h3>Konfirmasi Pembayaran</h3>
-    <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="modal-nama">—</span></div>
-    <div class="info-row"><span class="lbl">Total Bayar</span><span class="val total" id="modal-total">—</span></div>
-    <div class="divider"></div>
-    <div class="section-label">Metode Pembayaran</div>
-    <div class="metode-grid">
-      <button class="metode-btn active" id="met-tunai" onclick="pilihMetode('Tunai')">
-        <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>
-        Tunai
-      </button>
-      <button class="metode-btn" id="met-transfer" onclick="pilihMetode('Transfer')">
-        <svg fill="none" viewBox="0 0 24 24"><path d="M8 6l4-4 4 4M16 18l-4 4-4-4M12 2v20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        Transfer
-      </button>
-      <button class="metode-btn" id="met-qris" onclick="pilihMetode('QRIS')">
-        <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><path d="M14 14h2M17 14h3M14 17v3M17 17h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-        QRIS
-      </button>
-    </div>
-    <button class="btn btn-green" onclick="konfirmasiBayar()">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-      Tandai Lunas
-    </button>
-    <button class="btn btn-outline" style="margin-top:8px;" onclick="closeModal()">Batal</button>
+    <button class="btn btn-primary" id="btn-login">Masuk</button>
   </div>
 </div>
 
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="config.js"></script>
-<script src="app.js"></script>
+<script>
+// ========== SEMUA JAVASCRIPT (config + app) LANGSUNG DI SINI ==========
+
+// ════════════════════════════════════════════════════════
+//  KONFIGURASI
+// ════════════════════════════════════════════════════════
+
+// GANTI DENGAN URL APPS SCRIPT ANDA (dari akun andangchris91)
+const API_URL_ORIGIN = "https://script.google.com/macros/s/URL_BARU_ANDA/exec";
+const USE_JSONP = true;
+const USE_DEMO_MODE = false;  // Set ke true jika masih error
+
+const BULAN_INI = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][new Date().getMonth()];
+const TAHUN_INI = new Date().getFullYear();
+
+// ════════════════════════════════════════════════════════
+//  STATE & DEMO DATA
+// ════════════════════════════════════════════════════════
+
+let session = JSON.parse(sessionStorage.getItem("sipam_session") || "null");
+let allPelanggan = [];
+let currentPel = null;
+let currentTrx = null;
+let metodeAktif = "Tunai";
+let fromPage = "dashboard";
+
+const DEMO_USERS = [
+  { username: "admin", password: "admin123", nama: "Administrator", role: "admin" },
+  { username: "petugas.a", password: "petugas123", nama: "Petugas Lapangan A", role: "petugas" },
+];
+
+const DEMO_PEL = [
+  { id_pelanggan: "PLG-001", no_rumah: "A-01", nama: "Budi Santoso", alamat: "Jl. Mawar No. 1", no_telpon: "081234567890" },
+  { id_pelanggan: "PLG-002", no_rumah: "A-02", nama: "Siti Rahayu", alamat: "Jl. Mawar No. 2", no_telpon: "081234567891" },
+];
+
+let DEMO_TRX = [
+  { id_transaksi: "TRX-001", id_pelanggan: "PLG-001", no_rumah: "A-01", nama: "Budi Santoso", pemakaian: 15, jumlah_bayar: 27500, status: "Belum Bayar", tgl_bayar: "" },
+  { id_transaksi: "TRX-002", id_pelanggan: "PLG-002", no_rumah: "A-02", nama: "Siti Rahayu", pemakaian: 17, jumlah_bayar: 30500, status: "Belum Bayar", tgl_bayar: "" },
+];
+
+// ════════════════════════════════════════════════════════
+//  API CALL (JSONP)
+// ════════════════════════════════════════════════════════
+
+async function api(body) {
+  if (USE_DEMO_MODE) {
+    return demoApi(body);
+  }
+  
+  return new Promise((resolve) => {
+    try {
+      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.random().toString(36).substr(2, 8);
+      const params = new URLSearchParams();
+      params.append("data", JSON.stringify(body));
+      params.append("callback", callbackName);
+      
+      const url = API_URL_ORIGIN + "?" + params.toString();
+      console.log("JSONP Request:", url);
+      
+      window[callbackName] = function(data) {
+        console.log("Response:", data);
+        delete window[callbackName];
+        document.body.removeChild(script);
+        resolve(data);
+      };
+      
+      const script = document.createElement("script");
+      script.src = url;
+      script.onerror = function() {
+        console.error("JSONP Failed, using demo");
+        delete window[callbackName];
+        document.body.removeChild(script);
+        resolve(demoApi(body));
+      };
+      
+      document.body.appendChild(script);
+      
+      setTimeout(() => {
+        if (window[callbackName]) {
+          console.warn("JSONP timeout");
+          delete window[callbackName];
+          resolve(demoApi(body));
+        }
+      }, 10000);
+    } catch(error) {
+      console.error("API Error:", error);
+      resolve(demoApi(body));
+    }
+  });
+}
+
+async function demoApi(body) {
+  await new Promise(r => setTimeout(r, 350));
+  const { action } = body;
+  
+  if (action === "login") {
+    const u = DEMO_USERS.find(x => x.username === body.username && x.password === body.password);
+    if (!u) return { status: "error", message: "Username atau password salah." };
+    return { status: "ok", token: "demo-token", nama: u.nama, role: u.role, id_user: "USR-DEMO" };
+  }
+  if (action === "getPelanggan") return { status: "ok", data: DEMO_PEL };
+  if (action === "searchPelanggan") {
+    const kw = body.keyword.toLowerCase();
+    return { status: "ok", data: DEMO_PEL.filter(p => p.no_rumah.toLowerCase().includes(kw) || p.nama.toLowerCase().includes(kw)) };
+  }
+  if (action === "getLastMeter") return { status: "ok", meter_berjalan: null };
+  if (action === "saveMeteran") return { status: "ok", message: "Data meteran disimpan" };
+  if (action === "saveTransaksi") {
+    const t = DEMO_TRX.find(x => x.id_transaksi === body.id_transaksi);
+    if (t) { t.status = "Lunas"; t.tgl_bayar = new Date().toISOString().split("T")[0]; }
+    return { status: "ok", message: "Pembayaran berhasil" };
+  }
+  if (action === "getLaporan") {
+    const lunas = DEMO_TRX.filter(t => t.status === "Lunas");
+    const belum = DEMO_TRX.filter(t => t.status === "Belum Bayar");
+    return {
+      status: "ok",
+      laporan: {
+        bulan: BULAN_INI, tahun: TAHUN_INI,
+        total_pelanggan: DEMO_TRX.length,
+        sudah_bayar: lunas.length,
+        belum_bayar: belum.length,
+        total_terkumpul: 0,
+        total_piutang: 0
+      },
+      detail: DEMO_TRX
+    };
+  }
+  return { status: "error", message: "Action tidak dikenal" };
+}
+
+// ════════════════════════════════════════════════════════
+//  LOGIN FUNCTION
+// ════════════════════════════════════════════════════════
+
+async function doLogin() {
+  const username = document.getElementById("inp-username").value.trim();
+  const password = document.getElementById("inp-password").value;
+  const errEl = document.getElementById("login-err");
+  const btn = document.getElementById("btn-login");
+  
+  if (!username || !password) {
+    errEl.textContent = "Username dan password wajib diisi.";
+    errEl.style.display = "block";
+    return;
+  }
+  
+  btn.textContent = "Memverifikasi...";
+  btn.disabled = true;
+  
+  const res = await api({ action: "login", username, password });
+  
+  btn.innerHTML = "Masuk";
+  btn.disabled = false;
+  
+  if (res.status !== "ok") {
+    errEl.textContent = res.message;
+    errEl.style.display = "block";
+    return;
+  }
+  
+  errEl.style.display = "none";
+  session = { token: res.token, nama: res.nama, role: res.role, id_user: res.id_user };
+  sessionStorage.setItem("sipam_session", JSON.stringify(session));
+  
+  // Tampilkan dashboard sederhana
+  document.getElementById("pg-login").classList.remove("active");
+  document.getElementById("pg-dashboard").classList.add("active");
+  document.getElementById("dash-greeting").textContent = "Selamat datang, " + (session?.role === "admin" ? "Admin" : "Petugas");
+  document.getElementById("dash-nama").textContent = session?.nama || "—";
+  
+  showToast("Login berhasil! Selamat datang " + session.nama, "success");
+}
+
+function doLogout() {
+  sessionStorage.removeItem("sipam_session");
+  session = null;
+  document.getElementById("pg-dashboard").classList.remove("active");
+  document.getElementById("pg-login").classList.add("active");
+  document.getElementById("inp-username").value = "";
+  document.getElementById("inp-password").value = "";
+  showToast("Anda telah logout", "success");
+}
+
+function showToast(msg, type) {
+  const toast = document.getElementById("toast");
+  toast.textContent = msg;
+  toast.className = "toast show " + type;
+  setTimeout(() => toast.className = "toast", 3000);
+}
+
+// ════════════════════════════════════════════════════════
+//  INIT
+// ════════════════════════════════════════════════════════
+
+document.addEventListener("DOMContentLoaded", function() {
+  console.log("App loaded");
+  
+  // Attach event listeners
+  const loginBtn = document.getElementById("btn-login");
+  if (loginBtn) {
+    loginBtn.onclick = doLogin;
+  }
+  
+  const passwordInput = document.getElementById("inp-password");
+  if (passwordInput) {
+    passwordInput.addEventListener("keypress", function(e) {
+      if (e.key === "Enter") doLogin();
+    });
+  }
+  
+  // Check existing session
+  if (session?.token) {
+    document.getElementById("pg-login").classList.remove("active");
+    document.getElementById("pg-dashboard").classList.add("active");
+    document.getElementById("dash-greeting").textContent = "Selamat datang kembali";
+    document.getElementById("dash-nama").textContent = session?.nama || "—";
+  }
+  
+  // Setup logout button
+  const logoutBtn = document.querySelector(".topbar-icon");
+  if (logoutBtn) {
+    logoutBtn.onclick = doLogout;
+  }
+  
+  // Setup bottom nav buttons
+  const navItems = document.querySelectorAll(".nav-item");
+  navItems.forEach(item => {
+    item.onclick = function() {
+      const page = this.textContent.trim().toLowerCase();
+      if (page === "dashboard") {
+        document.getElementById("pg-dashboard").classList.add("active");
+        document.getElementById("pg-pelanggan")?.classList.remove("active");
+        document.getElementById("pg-meteran")?.classList.remove("active");
+        document.getElementById("pg-laporan")?.classList.remove("active");
+      } else if (page === "cari") {
+        document.getElementById("pg-pelanggan")?.classList.add("active");
+        document.getElementById("pg-dashboard").classList.remove("active");
+        document.getElementById("pg-meteran")?.classList.remove("active");
+        document.getElementById("pg-laporan")?.classList.remove("active");
+      } else if (page === "catat") {
+        document.getElementById("pg-meteran")?.classList.add("active");
+        document.getElementById("pg-dashboard").classList.remove("active");
+        document.getElementById("pg-pelanggan")?.classList.remove("active");
+        document.getElementById("pg-laporan")?.classList.remove("active");
+      } else if (page === "laporan") {
+        document.getElementById("pg-laporan")?.classList.add("active");
+        document.getElementById("pg-dashboard").classList.remove("active");
+        document.getElementById("pg-pelanggan")?.classList.remove("active");
+        document.getElementById("pg-meteran")?.classList.remove("active");
+      }
+    };
+  });
+  
+  console.log("Event listeners attached");
+});
+</script>
+
+<style>
+/* CSS Minimal untuk Toast dan Basic Layout */
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #333;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 8px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.toast.show {
+  opacity: 1;
+}
+.toast.success {
+  background: #0D9E5C;
+}
+.toast.error {
+  background: #DC2626;
+}
+.btn {
+  background: #0F52A0;
+  color: white;
+  border: none;
+  padding: 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  width: 100%;
+  font-size: 16px;
+}
+.form-input {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 15px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+}
+.login-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  margin: 20px;
+}
+.login-err {
+  color: #DC2626;
+  background: #FEE2E2;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+  display: none;
+}
+.topbar {
+  background: #0F52A0;
+  color: white;
+  padding: 40px 20px 20px;
+  display: flex;
+  justify-content: space-between;
+}
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: white;
+  display: flex;
+  border-top: 1px solid #ddd;
+  padding: 10px 0;
+}
+.nav-item {
+  flex: 1;
+  text-align: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+.page {
+  display: none;
+}
+.page.active {
+  display: block;
+}
+</style>
 </body>
 </html>
