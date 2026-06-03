@@ -3,7 +3,7 @@
 // ════════════════════════════════════════════════════════
 
 // URL Apps Script yang sudah di-deploy (GANTI DENGAN URL BARU ANDA)
-const API_URL_ORIGIN = "https://script.google.com/macros/s/AKfycbynWhYBfQvLHf6PJ-eHc2JnjciWVmebDjm-F7C2xjW5v2WakD9WCgSbvDLm4UZbW3Kc/exec";
+const API_URL_ORIGIN = "https://script.google.com/macros/s/AKfycbwCg8xDe6ZaXpdVf1RZe6D8DDhpoFKoMOknq6PJG39K5wtrOe_Sxl2YOty5e2dc0zX7/exec";
 
 // Gunakan CORS proxy untuk menghindari CORS error
 const USE_CORS_PROXY = true;  // Set ke true jika masih kena CORS error
