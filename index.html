@@ -2,36 +2,227 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>SiPAM — Sistem Pembayaran Air Minum</title>
 <style>
-/* ========== SEMUA CSS DARI style.css MASUK SINI ========== */
-:root {
-  --c-bg: #F0F4F8;
-  --c-surface: #FFFFFF;
-  --c-primary: #0F52A0;
-  --c-green: #0D9E5C;
-  --c-red: #DC2626;
-  --c-text: #1A202C;
-  --nav-h: 64px;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
-/* ... copy semua CSS dari style.css ke sini ... */
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: #f0f4f8;
+}
+
+#app {
+  max-width: 480px;
+  margin: 0 auto;
+  background: #f0f4f8;
+  min-height: 100vh;
+  position: relative;
+}
+
+/* Pages */
+.page {
+  display: none;
+  padding-bottom: 70px;
+}
+.page.active {
+  display: block;
+}
+
+/* Top Bar */
+.topbar {
+  background: #0F52A0;
+  color: white;
+  padding: 48px 20px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.topbar h1 {
+  font-size: 18px;
+}
+.topbar .sub {
+  font-size: 12px;
+  opacity: 0.8;
+}
+.topbar-icon {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+/* Bottom Nav */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 480px;
+  width: 100%;
+  background: white;
+  display: flex;
+  border-top: 1px solid #e2e8f0;
+  padding: 8px 0;
+  z-index: 100;
+}
+.nav-item {
+  flex: 1;
+  background: none;
+  border: none;
+  padding: 8px;
+  font-size: 11px;
+  color: #a0aec0;
+  cursor: pointer;
+}
+.nav-item.active {
+  color: #0F52A0;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border-radius: 12px;
+  margin: 12px;
+  padding: 16px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.card-header {
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #4a5568;
+}
+
+/* Stats Grid */
+.stat-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin: 12px;
+}
+.stat-box {
+  background: white;
+  padding: 16px;
+  border-radius: 12px;
+  text-align: center;
+}
+.stat-label {
+  font-size: 11px;
+  color: #718096;
+  margin-bottom: 8px;
+}
+.stat-val {
+  font-size: 24px;
+  font-weight: 700;
+}
+.stat-val.blue { color: #0F52A0; }
+.stat-val.green { color: #0D9E5C; }
+.stat-val.red { color: #DC2626; }
+
+/* Login Page */
+#pg-login {
+  background: #0F52A0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.login-card {
+  background: white;
+  border-radius: 20px;
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 380px;
+}
+.login-card h2 {
+  margin-bottom: 20px;
+  font-size: 20px;
+}
+.form-group {
+  margin-bottom: 16px;
+}
+.form-label {
+  display: block;
+  font-size: 12px;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+.form-input {
+  width: 100%;
+  padding: 12px;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 10px;
+  font-size: 14px;
+}
+.btn {
+  width: 100%;
+  padding: 14px;
+  background: #0F52A0;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.btn-green {
+  background: #0D9E5C;
+}
+.login-err {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 13px;
+  display: none;
+}
+.toast {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1a202c;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-size: 13px;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s;
+  pointer-events: none;
+}
+.toast.show {
+  opacity: 1;
+}
+.toast.success {
+  background: #0D9E5C;
+}
+.toast.error {
+  background: #DC2626;
+}
+.loading {
+  text-align: center;
+  padding: 40px;
+  color: #718096;
+}
 </style>
 </head>
 <body>
 <div id="app">
 
-<!-- ══════════ LOGIN ══════════ -->
+<!-- LOGIN PAGE -->
 <div class="page active" id="pg-login">
-  <div class="login-logo">
-    <div class="drop">
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/></svg>
-    </div>
-    <h1>SiPAM</h1>
-    <p>Sistem Pembayaran Air Minum</p>
-  </div>
   <div class="login-card">
-    <h2>Masuk ke sistem</h2>
+    <h2>SiPAM</h2>
+    <p style="margin-bottom: 20px; color: #718096;">Sistem Pembayaran Air Minum</p>
     <div class="login-err" id="login-err"></div>
     <div class="form-group">
       <label class="form-label">Username</label>
@@ -41,142 +232,241 @@
       <label class="form-label">Password</label>
       <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password"/>
     </div>
-    <button class="btn btn-primary" id="btn-login">Masuk</button>
+    <button class="btn" id="btn-login">Masuk</button>
   </div>
 </div>
 
-<!-- Toast -->
+<!-- DASHBOARD PAGE -->
+<div class="page" id="pg-dashboard">
+  <div class="topbar">
+    <div>
+      <div class="sub" id="dash-greeting">Selamat datang</div>
+      <h1 id="dash-nama">—</h1>
+    </div>
+    <button class="topbar-icon" id="btn-logout">Keluar</button>
+  </div>
+  <div class="page-body">
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="stat-label">Total Pelanggan</div>
+        <div class="stat-val blue" id="s-total">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Sudah Bayar</div>
+        <div class="stat-val green" id="s-lunas">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Belum Bayar</div>
+        <div class="stat-val red" id="s-belum">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">Terkumpul</div>
+        <div class="stat-val blue" id="s-nominal">Rp 0</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header">Tagihan Belum Bayar</div>
+      <div id="dash-belum-list">
+        <div class="loading">Memuat data...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-page="dashboard">Dashboard</button>
+    <button class="nav-item" data-page="pelanggan">Cari</button>
+    <button class="nav-item" data-page="meteran">Catat</button>
+    <button class="nav-item" data-page="laporan">Laporan</button>
+  </nav>
+</div>
+
+<!-- PELANGGAN PAGE (Sederhana) -->
+<div class="page" id="pg-pelanggan">
+  <div class="topbar">
+    <div><h1>Cari Pelanggan</h1></div>
+  </div>
+  <div class="page-body">
+    <div class="card">
+      <input type="text" id="search-input" class="form-input" placeholder="Cari nama / no rumah..." style="margin-bottom:0">
+    </div>
+    <div id="search-results"></div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="dashboard">Dashboard</button>
+    <button class="nav-item active" data-page="pelanggan">Cari</button>
+    <button class="nav-item" data-page="meteran">Catat</button>
+    <button class="nav-item" data-page="laporan">Laporan</button>
+  </nav>
+</div>
+
+<!-- METERAN PAGE (Sederhana) -->
+<div class="page" id="pg-meteran">
+  <div class="topbar">
+    <div><h1>Catat Meteran</h1></div>
+  </div>
+  <div class="page-body">
+    <div class="card">
+      <div class="card-header">Cari Pelanggan</div>
+      <input type="text" id="met-search" class="form-input" placeholder="Cari nama / no rumah...">
+      <div id="met-search-results" style="margin-top:12px;"></div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="dashboard">Dashboard</button>
+    <button class="nav-item" data-page="pelanggan">Cari</button>
+    <button class="nav-item active" data-page="meteran">Catat</button>
+    <button class="nav-item" data-page="laporan">Laporan</button>
+  </nav>
+</div>
+
+<!-- LAPORAN PAGE (Sederhana) -->
+<div class="page" id="pg-laporan">
+  <div class="topbar">
+    <div><h1>Laporan</h1></div>
+  </div>
+  <div class="page-body">
+    <div class="card">
+      <div class="card-header">Laporan Bulanan</div>
+      <div id="lap-list">
+        <div class="loading">Memuat data...</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" data-page="dashboard">Dashboard</button>
+    <button class="nav-item" data-page="pelanggan">Cari</button>
+    <button class="nav-item" data-page="meteran">Catat</button>
+    <button class="nav-item active" data-page="laporan">Laporan</button>
+  </nav>
+</div>
+
+<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <script>
-// ========== SEMUA JAVASCRIPT (config + app) LANGSUNG DI SINI ==========
-
 // ════════════════════════════════════════════════════════
 //  KONFIGURASI
 // ════════════════════════════════════════════════════════
 
-// GANTI DENGAN URL APPS SCRIPT ANDA (dari akun andangchris91)
-const API_URL_ORIGIN = "https://script.google.com/macros/s/AKfycbyFBST8V6Ztf73USATcMsyfS-hPBv-6BVeSzJVUA8_LVAT9WutU72frAhw0EmsBYur4/exec";
-const USE_JSONP = true;
-const USE_DEMO_MODE = false;  // Set ke true jika masih error
+// ⚠️ GANTI DENGAN URL APPS SCRIPT ANDA (dari akun andangchris91)
+const API_URL = "https://script.google.com/macros/s/AKfycbyFBST8V6Ztf73USATcMsyfS-hPBv-6BVeSzJVUA8_LVAT9WutU72frAhw0EmsBYur4/exec";
 
-const BULAN_INI = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][new Date().getMonth()];
-const TAHUN_INI = new Date().getFullYear();
+// Gunakan DEMO MODE dulu untuk test (set ke false nanti)
+const USE_DEMO = true;  // ← Set ke FALSE jika sudah yakin API_URL benar
 
 // ════════════════════════════════════════════════════════
-//  STATE & DEMO DATA
+//  STATE
 // ════════════════════════════════════════════════════════
 
 let session = JSON.parse(sessionStorage.getItem("sipam_session") || "null");
-let allPelanggan = [];
-let currentPel = null;
-let currentTrx = null;
-let metodeAktif = "Tunai";
-let fromPage = "dashboard";
 
+// Demo data
 const DEMO_USERS = [
   { username: "admin", password: "admin123", nama: "Administrator", role: "admin" },
-  { username: "petugas.a", password: "petugas123", nama: "Petugas Lapangan A", role: "petugas" },
+  { username: "petugas.a", password: "petugas123", nama: "Petugas A", role: "petugas" }
 ];
 
-const DEMO_PEL = [
-  { id_pelanggan: "PLG-001", no_rumah: "A-01", nama: "Budi Santoso", alamat: "Jl. Mawar No. 1", no_telpon: "081234567890" },
-  { id_pelanggan: "PLG-002", no_rumah: "A-02", nama: "Siti Rahayu", alamat: "Jl. Mawar No. 2", no_telpon: "081234567891" },
+const DEMO_PELANGGAN = [
+  { id_pelanggan: "PLG-001", no_rumah: "A-01", nama: "Budi Santoso", alamat: "Jl. Mawar No.1", no_telpon: "081234567890" },
+  { id_pelanggan: "PLG-002", no_rumah: "A-02", nama: "Siti Rahayu", alamat: "Jl. Mawar No.2", no_telpon: "081234567891" },
+  { id_pelanggan: "PLG-003", no_rumah: "A-03", nama: "Ahmad Fauzi", alamat: "Jl. Melati No.5", no_telpon: "081234567892" }
 ];
 
-let DEMO_TRX = [
-  { id_transaksi: "TRX-001", id_pelanggan: "PLG-001", no_rumah: "A-01", nama: "Budi Santoso", pemakaian: 15, jumlah_bayar: 27500, status: "Belum Bayar", tgl_bayar: "" },
-  { id_transaksi: "TRX-002", id_pelanggan: "PLG-002", no_rumah: "A-02", nama: "Siti Rahayu", pemakaian: 17, jumlah_bayar: 30500, status: "Belum Bayar", tgl_bayar: "" },
+let DEMO_TRANSAKSI = [
+  { id_transaksi: "TRX-001", id_pelanggan: "PLG-001", nama: "Budi Santoso", no_rumah: "A-01", pemakaian: 15, jumlah_bayar: 27500, status: "Belum Bayar" },
+  { id_transaksi: "TRX-002", id_pelanggan: "PLG-002", nama: "Siti Rahayu", no_rumah: "A-02", pemakaian: 17, jumlah_bayar: 30500, status: "Lunas" },
+  { id_transaksi: "TRX-003", id_pelanggan: "PLG-003", nama: "Ahmad Fauzi", no_rumah: "A-03", pemakaian: 18, jumlah_bayar: 32000, status: "Belum Bayar" }
 ];
 
 // ════════════════════════════════════════════════════════
-//  API CALL (JSONP)
+//  API CALL
 // ════════════════════════════════════════════════════════
 
-async function api(body) {
-  if (USE_DEMO_MODE) {
-    return demoApi(body);
+async function callAPI(action, data = {}) {
+  if (USE_DEMO) {
+    console.log("DEMO MODE - Action:", action);
+    return handleDemoAPI(action, data);
   }
   
-  return new Promise((resolve) => {
-    try {
-      const callbackName = "jsonp_cb_" + Date.now() + "_" + Math.random().toString(36).substr(2, 8);
-      const params = new URLSearchParams();
-      params.append("data", JSON.stringify(body));
-      params.append("callback", callbackName);
+  try {
+    const body = { action, ...data, token: session?.token };
+    
+    // Coba JSONP dulu
+    return new Promise((resolve) => {
+      const callbackName = "cb_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+      const url = API_URL + "?callback=" + callbackName + "&data=" + encodeURIComponent(JSON.stringify(body));
       
-      const url = API_URL_ORIGIN + "?" + params.toString();
-      console.log("JSONP Request:", url);
-      
-      window[callbackName] = function(data) {
-        console.log("Response:", data);
+      window[callbackName] = function(result) {
         delete window[callbackName];
         document.body.removeChild(script);
-        resolve(data);
+        resolve(result);
       };
       
       const script = document.createElement("script");
       script.src = url;
-      script.onerror = function() {
-        console.error("JSONP Failed, using demo");
+      script.onerror = () => {
         delete window[callbackName];
-        document.body.removeChild(script);
-        resolve(demoApi(body));
+        resolve({ status: "error", message: "Network error" });
       };
-      
       document.body.appendChild(script);
       
       setTimeout(() => {
         if (window[callbackName]) {
-          console.warn("JSONP timeout");
           delete window[callbackName];
-          resolve(demoApi(body));
+          resolve({ status: "error", message: "Timeout" });
         }
       }, 10000);
-    } catch(error) {
-      console.error("API Error:", error);
-      resolve(demoApi(body));
-    }
-  });
+    });
+  } catch (error) {
+    console.error("API Error:", error);
+    return { status: "error", message: error.message };
+  }
 }
 
-async function demoApi(body) {
-  await new Promise(r => setTimeout(r, 350));
-  const { action } = body;
-  
+function handleDemoAPI(action, data) {
   if (action === "login") {
-    const u = DEMO_USERS.find(x => x.username === body.username && x.password === body.password);
-    if (!u) return { status: "error", message: "Username atau password salah." };
-    return { status: "ok", token: "demo-token", nama: u.nama, role: u.role, id_user: "USR-DEMO" };
+    const user = DEMO_USERS.find(u => u.username === data.username && u.password === data.password);
+    if (!user) return { status: "error", message: "Username atau password salah" };
+    return { status: "ok", token: "demo-token", nama: user.nama, role: user.role };
   }
-  if (action === "getPelanggan") return { status: "ok", data: DEMO_PEL };
+  
+  if (action === "getPelanggan") {
+    return { status: "ok", data: DEMO_PELANGGAN };
+  }
+  
   if (action === "searchPelanggan") {
-    const kw = body.keyword.toLowerCase();
-    return { status: "ok", data: DEMO_PEL.filter(p => p.no_rumah.toLowerCase().includes(kw) || p.nama.toLowerCase().includes(kw)) };
+    const kw = (data.keyword || "").toLowerCase();
+    const filtered = DEMO_PELANGGAN.filter(p => 
+      p.nama.toLowerCase().includes(kw) || p.no_rumah.toLowerCase().includes(kw)
+    );
+    return { status: "ok", data: filtered };
   }
-  if (action === "getLastMeter") return { status: "ok", meter_berjalan: null };
-  if (action === "saveMeteran") return { status: "ok", message: "Data meteran disimpan" };
-  if (action === "saveTransaksi") {
-    const t = DEMO_TRX.find(x => x.id_transaksi === body.id_transaksi);
-    if (t) { t.status = "Lunas"; t.tgl_bayar = new Date().toISOString().split("T")[0]; }
-    return { status: "ok", message: "Pembayaran berhasil" };
-  }
+  
   if (action === "getLaporan") {
-    const lunas = DEMO_TRX.filter(t => t.status === "Lunas");
-    const belum = DEMO_TRX.filter(t => t.status === "Belum Bayar");
+    const lunas = DEMO_TRANSAKSI.filter(t => t.status === "Lunas");
+    const belum = DEMO_TRANSAKSI.filter(t => t.status === "Belum Bayar");
+    const totalTerkumpul = lunas.reduce((s, t) => s + t.jumlah_bayar, 0);
+    
     return {
       status: "ok",
       laporan: {
-        bulan: BULAN_INI, tahun: TAHUN_INI,
-        total_pelanggan: DEMO_TRX.length,
+        total_pelanggan: DEMO_TRANSAKSI.length,
         sudah_bayar: lunas.length,
         belum_bayar: belum.length,
-        total_terkumpul: 0,
-        total_piutang: 0
+        total_terkumpul: totalTerkumpul
       },
-      detail: DEMO_TRX
+      detail: DEMO_TRANSAKSI
     };
   }
+  
+  if (action === "saveTransaksi") {
+    const trx = DEMO_TRANSAKSI.find(t => t.id_transaksi === data.id_transaksi);
+    if (trx) {
+      trx.status = "Lunas";
+      trx.tgl_bayar = new Date().toISOString().split("T")[0];
+    }
+    return { status: "ok", message: "Pembayaran berhasil" };
+  }
+  
   return { status: "error", message: "Action tidak dikenal" };
 }
 
@@ -191,53 +481,198 @@ async function doLogin() {
   const btn = document.getElementById("btn-login");
   
   if (!username || !password) {
-    errEl.textContent = "Username dan password wajib diisi.";
+    errEl.textContent = "Username dan password wajib diisi";
     errEl.style.display = "block";
     return;
   }
   
-  btn.textContent = "Memverifikasi...";
   btn.disabled = true;
+  btn.textContent = "Memproses...";
+  errEl.style.display = "none";
   
-  const res = await api({ action: "login", username, password });
+  const result = await callAPI("login", { username, password });
   
-  btn.innerHTML = "Masuk";
   btn.disabled = false;
+  btn.textContent = "Masuk";
   
-  if (res.status !== "ok") {
-    errEl.textContent = res.message;
+  if (result.status !== "ok") {
+    errEl.textContent = result.message;
     errEl.style.display = "block";
     return;
   }
   
-  errEl.style.display = "none";
-  session = { token: res.token, nama: res.nama, role: res.role, id_user: res.id_user };
+  session = {
+    token: result.token,
+    nama: result.nama,
+    role: result.role
+  };
   sessionStorage.setItem("sipam_session", JSON.stringify(session));
   
-  // Tampilkan dashboard sederhana
-  document.getElementById("pg-login").classList.remove("active");
-  document.getElementById("pg-dashboard").classList.add("active");
-  document.getElementById("dash-greeting").textContent = "Selamat datang, " + (session?.role === "admin" ? "Admin" : "Petugas");
-  document.getElementById("dash-nama").textContent = session?.nama || "—";
-  
   showToast("Login berhasil! Selamat datang " + session.nama, "success");
+  
+  // Tampilkan dashboard
+  showPage("dashboard");
+  loadDashboard();
 }
 
 function doLogout() {
   sessionStorage.removeItem("sipam_session");
   session = null;
-  document.getElementById("pg-dashboard").classList.remove("active");
-  document.getElementById("pg-login").classList.add("active");
-  document.getElementById("inp-username").value = "";
-  document.getElementById("inp-password").value = "";
+  showPage("login");
   showToast("Anda telah logout", "success");
+}
+
+// ════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════
+
+async function loadDashboard() {
+  const greeting = document.getElementById("dash-greeting");
+  const namaEl = document.getElementById("dash-nama");
+  
+  if (greeting) {
+    const hour = new Date().getHours();
+    const greet = hour < 12 ? "Selamat pagi" : hour < 18 ? "Selamat siang" : "Selamat malam";
+    greeting.textContent = `${greet}, ${session?.role === "admin" ? "Admin" : "Petugas"}`;
+  }
+  if (namaEl) namaEl.textContent = session?.nama || "—";
+  
+  const result = await callAPI("getLaporan");
+  
+  if (result.status === "ok" && result.laporan) {
+    document.getElementById("s-total").textContent = result.laporan.total_pelanggan || 0;
+    document.getElementById("s-lunas").textContent = result.laporan.sudah_bayar || 0;
+    document.getElementById("s-belum").textContent = result.laporan.belum_bayar || 0;
+    document.getElementById("s-nominal").textContent = formatRupiah(result.laporan.total_terkumpul || 0);
+    
+    const belum = (result.detail || []).filter(t => t.status === "Belum Bayar");
+    const listEl = document.getElementById("dash-belum-list");
+    
+    if (belum.length === 0) {
+      listEl.innerHTML = '<div class="loading">✨ Semua pelanggan sudah lunas!</div>';
+    } else {
+      listEl.innerHTML = belum.map(t => `
+        <div style="padding: 12px; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between;">
+          <div>
+            <strong>${escapeHtml(t.nama)}</strong><br>
+            <small style="color: #718096;">${t.no_rumah}</small>
+          </div>
+          <div style="text-align: right;">
+            <div>${formatRupiah(t.jumlah_bayar)}</div>
+            <button class="btn-bayar" data-id="${t.id_transaksi}" style="background: #0D9E5C; color: white; border: none; padding: 4px 12px; border-radius: 6px; margin-top: 4px; cursor: pointer;">Bayar</button>
+          </div>
+        </div>
+      `).join("");
+      
+      // Attach event listeners
+      document.querySelectorAll(".btn-bayar").forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const idTransaksi = btn.getAttribute("data-id");
+          const result = await callAPI("saveTransaksi", { id_transaksi: idTransaksi });
+          if (result.status === "ok") {
+            showToast("Pembayaran berhasil!", "success");
+            loadDashboard();
+          } else {
+            showToast("Gagal: " + result.message, "error");
+          }
+        };
+      });
+    }
+  } else {
+    console.error("Failed to load dashboard:", result);
+    document.getElementById("dash-belum-list").innerHTML = '<div class="loading">Gagal memuat data</div>';
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  SEARCH PELANGGAN
+// ════════════════════════════════════════════════════════
+
+let searchTimeout;
+const searchInput = document.getElementById("search-input");
+if (searchInput) {
+  searchInput.oninput = function() {
+    clearTimeout(searchTimeout);
+    const keyword = this.value;
+    if (keyword.length < 2) {
+      document.getElementById("search-results").innerHTML = "";
+      return;
+    }
+    searchTimeout = setTimeout(async () => {
+      const result = await callAPI("searchPelanggan", { keyword });
+      if (result.status === "ok" && result.data) {
+        const html = result.data.map(p => `
+          <div style="padding: 12px; border-bottom: 1px solid #e2e8f0;">
+            <strong>${escapeHtml(p.nama)}</strong><br>
+            <small>${p.no_rumah} - ${escapeHtml(p.alamat)}</small>
+          </div>
+        `).join("");
+        document.getElementById("search-results").innerHTML = html || '<div class="loading">Tidak ditemukan</div>';
+      }
+    }, 300);
+  };
+}
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════
+
+function showPage(pageName) {
+  // Hide all pages
+  document.querySelectorAll(".page").forEach(page => {
+    page.classList.remove("active");
+  });
+  
+  // Show selected page
+  const pageMap = {
+    login: "pg-login",
+    dashboard: "pg-dashboard",
+    pelanggan: "pg-pelanggan",
+    meteran: "pg-meteran",
+    laporan: "pg-laporan"
+  };
+  
+  const pageId = pageMap[pageName];
+  if (pageId) {
+    const page = document.getElementById(pageId);
+    if (page) page.classList.add("active");
+  }
+  
+  // Update active nav item
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.classList.remove("active");
+    if (btn.getAttribute("data-page") === pageName) {
+      btn.classList.add("active");
+    }
+  });
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+
+function formatRupiah(angka) {
+  return "Rp " + angka.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+}
+
+function escapeHtml(str) {
+  if (!str) return "";
+  return str.replace(/[&<>]/g, function(m) {
+    if (m === '&') return '&amp;';
+    if (m === '<') return '&lt;';
+    if (m === '>') return '&gt;';
+    return m;
+  });
 }
 
 function showToast(msg, type) {
   const toast = document.getElementById("toast");
   toast.textContent = msg;
   toast.className = "toast show " + type;
-  setTimeout(() => toast.className = "toast", 3000);
+  setTimeout(() => {
+    toast.className = "toast";
+  }, 3000);
 }
 
 // ════════════════════════════════════════════════════════
@@ -245,14 +680,17 @@ function showToast(msg, type) {
 // ════════════════════════════════════════════════════════
 
 document.addEventListener("DOMContentLoaded", function() {
-  console.log("App loaded");
+  console.log("App loaded - DEMO MODE:", USE_DEMO);
   
-  // Attach event listeners
+  // Login button
   const loginBtn = document.getElementById("btn-login");
-  if (loginBtn) {
-    loginBtn.onclick = doLogin;
-  }
+  if (loginBtn) loginBtn.onclick = doLogin;
   
+  // Logout button
+  const logoutBtn = document.getElementById("btn-logout");
+  if (logoutBtn) logoutBtn.onclick = doLogout;
+  
+  // Enter key on password
   const passwordInput = document.getElementById("inp-password");
   if (passwordInput) {
     passwordInput.addEventListener("keypress", function(e) {
@@ -260,138 +698,40 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   }
   
-  // Check existing session
-  if (session?.token) {
-    document.getElementById("pg-login").classList.remove("active");
-    document.getElementById("pg-dashboard").classList.add("active");
-    document.getElementById("dash-greeting").textContent = "Selamat datang kembali";
-    document.getElementById("dash-nama").textContent = session?.nama || "—";
-  }
-  
-  // Setup logout button
-  const logoutBtn = document.querySelector(".topbar-icon");
-  if (logoutBtn) {
-    logoutBtn.onclick = doLogout;
-  }
-  
-  // Setup bottom nav buttons
-  const navItems = document.querySelectorAll(".nav-item");
-  navItems.forEach(item => {
-    item.onclick = function() {
-      const page = this.textContent.trim().toLowerCase();
-      if (page === "dashboard") {
-        document.getElementById("pg-dashboard").classList.add("active");
-        document.getElementById("pg-pelanggan")?.classList.remove("active");
-        document.getElementById("pg-meteran")?.classList.remove("active");
-        document.getElementById("pg-laporan")?.classList.remove("active");
-      } else if (page === "cari") {
-        document.getElementById("pg-pelanggan")?.classList.add("active");
-        document.getElementById("pg-dashboard").classList.remove("active");
-        document.getElementById("pg-meteran")?.classList.remove("active");
-        document.getElementById("pg-laporan")?.classList.remove("active");
-      } else if (page === "catat") {
-        document.getElementById("pg-meteran")?.classList.add("active");
-        document.getElementById("pg-dashboard").classList.remove("active");
-        document.getElementById("pg-pelanggan")?.classList.remove("active");
-        document.getElementById("pg-laporan")?.classList.remove("active");
-      } else if (page === "laporan") {
-        document.getElementById("pg-laporan")?.classList.add("active");
-        document.getElementById("pg-dashboard").classList.remove("active");
-        document.getElementById("pg-pelanggan")?.classList.remove("active");
-        document.getElementById("pg-meteran")?.classList.remove("active");
-      }
+  // Bottom navigation
+  document.querySelectorAll(".nav-item").forEach(btn => {
+    btn.onclick = function() {
+      const page = this.getAttribute("data-page");
+      showPage(page);
+      if (page === "dashboard") loadDashboard();
+      if (page === "laporan") loadLaporan();
     };
   });
   
-  console.log("Event listeners attached");
+  // Check existing session
+  if (session?.token) {
+    showPage("dashboard");
+    loadDashboard();
+  } else {
+    showPage("login");
+  }
 });
-</script>
 
-<style>
-/* CSS Minimal untuk Toast dan Basic Layout */
-.toast {
-  position: fixed;
-  bottom: 80px;
-  left: 50%;
-  transform: translateX(-50%);
-  background: #333;
-  color: white;
-  padding: 10px 20px;
-  border-radius: 8px;
-  z-index: 1000;
-  opacity: 0;
-  transition: opacity 0.3s;
+async function loadLaporan() {
+  const result = await callAPI("getLaporan");
+  if (result.status === "ok" && result.laporan) {
+    document.getElementById("lap-list").innerHTML = `
+      <div style="margin-bottom: 12px;">
+        <strong>Total Pelanggan:</strong> ${result.laporan.total_pelanggan}<br>
+        <strong>Lunas:</strong> ${result.laporan.sudah_bayar}<br>
+        <strong>Belum Bayar:</strong> ${result.laporan.belum_bayar}<br>
+        <strong>Terkumpul:</strong> ${formatRupiah(result.laporan.total_terkumpul)}
+      </div>
+    `;
+  } else {
+    document.getElementById("lap-list").innerHTML = '<div class="loading">Gagal memuat laporan</div>';
+  }
 }
-.toast.show {
-  opacity: 1;
-}
-.toast.success {
-  background: #0D9E5C;
-}
-.toast.error {
-  background: #DC2626;
-}
-.btn {
-  background: #0F52A0;
-  color: white;
-  border: none;
-  padding: 12px;
-  border-radius: 8px;
-  cursor: pointer;
-  width: 100%;
-  font-size: 16px;
-}
-.form-input {
-  width: 100%;
-  padding: 10px;
-  margin-bottom: 15px;
-  border: 1px solid #ddd;
-  border-radius: 8px;
-}
-.login-card {
-  background: white;
-  padding: 20px;
-  border-radius: 12px;
-  margin: 20px;
-}
-.login-err {
-  color: #DC2626;
-  background: #FEE2E2;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 15px;
-  display: none;
-}
-.topbar {
-  background: #0F52A0;
-  color: white;
-  padding: 40px 20px 20px;
-  display: flex;
-  justify-content: space-between;
-}
-.bottom-nav {
-  position: fixed;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  background: white;
-  display: flex;
-  border-top: 1px solid #ddd;
-  padding: 10px 0;
-}
-.nav-item {
-  flex: 1;
-  text-align: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-}
-.page {
-  display: none;
-}
-.page.active {
-  display: block;
-}
-</style>
+</script>
 </body>
 </html>
