@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<title>SiPAM — Sistem Pembayaran Air Minum</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+/* ── TOKENS ───────────────────────────────────────────── */
+:root {
+  --c-bg:        #F0F4F8;
+  --c-surface:   #FFFFFF;
+  --c-surface2:  #F7FAFC;
+  --c-border:    #E2E8F0;
+  --c-primary:   #0F52A0;
+  --c-primary-l: #EBF2FF;
+  --c-primary-d: #0A3D7A;
+  --c-accent:    #00B4D8;
+  --c-green:     #0D9E5C;
+  --c-green-l:   #D1FAE5;
+  --c-red:       #DC2626;
+  --c-red-l:     #FEE2E2;
+  --c-amber:     #D97706;
+  --c-amber-l:   #FEF3C7;
+  --c-text:      #1A202C;
+  --c-text2:     #4A5568;
+  --c-text3:     #A0AEC0;
+  --r-card:      14px;
+  --r-btn:       10px;
+  --shadow:      0 2px 12px rgba(15,82,160,.10);
+  --shadow-lg:   0 8px 32px rgba(15,82,160,.16);
+  --font:        'Plus Jakarta Sans', sans-serif;
+  --font-mono:   'DM Mono', monospace;
+  --nav-h:       64px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; font-family: var(--font); background: var(--c-bg); color: var(--c-text); font-size: 15px; -webkit-tap-highlight-color: transparent; }
+
+/* ── LAYOUT ───────────────────────────────────────────── */
+#app { max-width: 480px; min-height: 100dvh; margin: 0 auto; position: relative; }
+.page { display: none; flex-direction: column; min-height: 100dvh; animation: fadeUp .25s ease; }
+.page.active { display: flex; }
+@keyframes fadeUp { from { opacity:0; transform:translateY(10px) } to { opacity:1; transform:none } }
+
+/* ── TOP BAR ─────────────────────────────────────────── */
+.topbar {
+  background: var(--c-primary);
+  padding: 48px 20px 18px;
+  position: relative;
+  overflow: hidden;
+}
+.topbar::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 80% -20%, rgba(0,180,216,.35) 0%, transparent 60%);
+  pointer-events:none;
+}
+.topbar-row { display:flex; align-items:center; justify-content:space-between; position:relative; }
+.topbar h1 { font-size:18px; font-weight:700; color:#fff; letter-spacing:-.3px; }
+.topbar .sub { font-size:12px; color:rgba(255,255,255,.65); margin-top:2px; }
+.topbar-icon { width:36px; height:36px; background:rgba(255,255,255,.15); border-radius:50%; display:flex; align-items:center; justify-content:center; cursor:pointer; border:none; color:#fff; font-size:18px; }
+
+/* ── BOTTOM NAV ──────────────────────────────────────── */
+.bottom-nav {
+  position: fixed; bottom:0; left:50%; transform:translateX(-50%);
+  width: 100%; max-width:480px;
+  background: var(--c-surface);
+  border-top: 1px solid var(--c-border);
+  display: flex; height: var(--nav-h);
+  z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,.06);
+}
+.nav-item { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; cursor:pointer; border:none; background:none; color:var(--c-text3); font-family:var(--font); font-size:10px; font-weight:500; transition:color .15s; }
+.nav-item.active { color:var(--c-primary); }
+.nav-item svg { width:22px; height:22px; }
+
+/* ── SCROLLABLE BODY ─────────────────────────────────── */
+.page-body { flex:1; overflow-y:auto; padding: 16px 16px calc(var(--nav-h) + 16px); }
+
+/* ── CARDS ───────────────────────────────────────────── */
+.card { background:var(--c-surface); border-radius:var(--r-card); border:1px solid var(--c-border); box-shadow:var(--shadow); overflow:hidden; margin-bottom:12px; }
+.card-header { padding:14px 16px; border-bottom:1px solid var(--c-border); display:flex; align-items:center; justify-content:space-between; }
+.card-title { font-size:13px; font-weight:600; color:var(--c-text2); text-transform:uppercase; letter-spacing:.5px; }
+.card-body { padding:16px; }
+
+/* ── STAT GRID ───────────────────────────────────────── */
+.stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:12px; }
+.stat-box { background:var(--c-surface); border:1px solid var(--c-border); border-radius:var(--r-card); padding:14px; }
+.stat-label { font-size:11px; color:var(--c-text3); font-weight:500; margin-bottom:4px; }
+.stat-val { font-size:22px; font-weight:700; color:var(--c-text); }
+.stat-val.green { color:var(--c-green); }
+.stat-val.red   { color:var(--c-red); }
+.stat-val.blue  { color:var(--c-primary); }
+.stat-val.sm    { font-size:15px; }
+
+/* ── PELANGGAN ITEM ──────────────────────────────────── */
+.pel-item { display:flex; align-items:center; gap:12px; padding:12px 0; border-bottom:1px solid var(--c-border); cursor:pointer; }
+.pel-item:last-child { border-bottom:none; }
+.pel-item:hover .pel-name { color:var(--c-primary); }
+.avatar { width:40px; height:40px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:700; flex-shrink:0; }
+.av-b { background:var(--c-primary-l); color:var(--c-primary); }
+.av-g { background:var(--c-green-l); color:var(--c-green); }
+.av-a { background:var(--c-amber-l); color:var(--c-amber); }
+.pel-info { flex:1; min-width:0; }
+.pel-name { font-size:14px; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.pel-sub  { font-size:12px; color:var(--c-text3); margin-top:1px; }
+.badge { font-size:10px; font-weight:600; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+.badge-green { background:var(--c-green-l); color:var(--c-green); }
+.badge-red   { background:var(--c-red-l);   color:var(--c-red); }
+.badge-amber { background:var(--c-amber-l); color:var(--c-amber); }
+.badge-blue  { background:var(--c-primary-l); color:var(--c-primary); }
+
+/* ── FORM ────────────────────────────────────────────── */
+.form-group { margin-bottom:14px; }
+.form-label { font-size:12px; font-weight:600; color:var(--c-text2); margin-bottom:6px; display:block; }
+.form-input {
+  width:100%; padding:12px 14px; border:1.5px solid var(--c-border);
+  border-radius:var(--r-btn); font-family:var(--font); font-size:14px;
+  background:var(--c-surface); color:var(--c-text); outline:none;
+  transition:border-color .15s, box-shadow .15s;
+}
+.form-input:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px rgba(15,82,160,.1); }
+.form-input[readonly] { background:var(--c-surface2); color:var(--c-text2); }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.form-hint { font-size:11px; color:var(--c-text3); margin-top:4px; }
+
+/* ── BUTTONS ─────────────────────────────────────────── */
+.btn { display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:14px; border-radius:var(--r-btn); font-family:var(--font); font-size:14px; font-weight:600; cursor:pointer; border:none; transition:opacity .15s, transform .1s; }
+.btn:active { transform:scale(.98); opacity:.85; }
+.btn-primary { background:var(--c-primary); color:#fff; }
+.btn-green   { background:var(--c-green);   color:#fff; }
+.btn-outline { background:transparent; border:1.5px solid var(--c-border); color:var(--c-text2); }
+.btn-red     { background:var(--c-red);     color:#fff; }
+.btn + .btn  { margin-top:10px; }
+.btn-sm { padding:8px 14px; font-size:12px; width:auto; border-radius:8px; }
+
+/* ── SEARCH BAR ──────────────────────────────────────── */
+.search-wrap { position:relative; margin-bottom:14px; }
+.search-wrap svg { position:absolute; left:12px; top:50%; transform:translateY(-50%); color:var(--c-text3); width:18px; }
+.search-input { width:100%; padding:11px 12px 11px 40px; border:1.5px solid var(--c-border); border-radius:var(--r-btn); font-family:var(--font); font-size:14px; background:var(--c-surface); color:var(--c-text); outline:none; }
+.search-input:focus { border-color:var(--c-primary); box-shadow:0 0 0 3px rgba(15,82,160,.08); }
+
+/* ── INFO ROWS ───────────────────────────────────────── */
+.info-row { display:flex; justify-content:space-between; align-items:center; padding:11px 0; border-bottom:1px solid var(--c-border); font-size:13px; }
+.info-row:last-child { border-bottom:none; }
+.info-row .lbl { color:var(--c-text2); }
+.info-row .val { font-weight:600; color:var(--c-text); font-variant-numeric:tabular-nums; }
+.info-row .val.big   { font-size:16px; color:var(--c-primary); }
+.info-row .val.total { font-size:18px; color:var(--c-green); }
+.info-row .val.mono  { font-family:var(--font-mono); font-size:12px; }
+
+/* ── DIVIDER ─────────────────────────────────────────── */
+.divider { height:1px; background:var(--c-border); margin:16px 0; }
+.section-label { font-size:11px; font-weight:700; color:var(--c-text3); text-transform:uppercase; letter-spacing:.8px; margin-bottom:10px; }
+
+/* ── TOAST ───────────────────────────────────────────── */
+.toast {
+  position:fixed; bottom:calc(var(--nav-h) + 12px); left:50%; transform:translateX(-50%) translateY(20px);
+  background:#1A202C; color:#fff; border-radius:10px; padding:11px 20px;
+  font-size:13px; font-weight:500; white-space:nowrap; z-index:999;
+  opacity:0; transition:all .25s; pointer-events:none;
+}
+.toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+.toast.success { background:var(--c-green); }
+.toast.error   { background:var(--c-red); }
+
+/* ── EMPTY STATE ─────────────────────────────────────── */
+.empty { text-align:center; padding:40px 20px; color:var(--c-text3); }
+.empty svg { width:48px; height:48px; margin:0 auto 12px; opacity:.4; display:block; }
+.empty p { font-size:14px; }
+
+/* ── BACK BTN ────────────────────────────────────────── */
+.back-btn { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.15); border:none; color:#fff; font-family:var(--font); font-size:13px; padding:6px 10px 6px 6px; border-radius:20px; cursor:pointer; margin-bottom:10px; }
+
+/* ── LOADING ─────────────────────────────────────────── */
+.loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:32px; color:var(--c-text3); font-size:13px; }
+.spinner { width:20px; height:20px; border:2.5px solid var(--c-border); border-top-color:var(--c-primary); border-radius:50%; animation:spin .7s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg) } }
+
+/* ── LOGIN PAGE ──────────────────────────────────────── */
+#pg-login {
+  min-height:100dvh; background:var(--c-primary);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  padding:32px 24px; position:relative; overflow:hidden;
+}
+#pg-login::before {
+  content:''; position:absolute; inset:0;
+  background: radial-gradient(ellipse at 20% 80%, rgba(0,180,216,.3) 0%, transparent 55%),
+              radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.08) 0%, transparent 50%);
+  pointer-events:none;
+}
+.login-logo { margin-bottom:32px; text-align:center; position:relative; }
+.login-logo .drop { width:72px; height:72px; background:rgba(255,255,255,.15); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 14px; backdrop-filter:blur(8px); border:1.5px solid rgba(255,255,255,.2); }
+.login-logo h1 { font-size:26px; font-weight:700; color:#fff; letter-spacing:-1px; }
+.login-logo p  { font-size:13px; color:rgba(255,255,255,.6); margin-top:4px; }
+.login-card { background:var(--c-surface); border-radius:20px; padding:28px 24px; width:100%; max-width:380px; position:relative; box-shadow:var(--shadow-lg); }
+.login-card h2 { font-size:17px; font-weight:700; margin-bottom:20px; }
+.login-err { background:var(--c-red-l); color:var(--c-red); border-radius:8px; padding:10px 12px; font-size:13px; margin-bottom:14px; display:none; }
+
+/* ── MONTH PICKER ────────────────────────────────────── */
+.month-row { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; scrollbar-width:none; }
+.month-row::-webkit-scrollbar { display:none; }
+.month-chip { flex-shrink:0; padding:6px 14px; border-radius:20px; font-size:12px; font-weight:600; border:1.5px solid var(--c-border); background:var(--c-surface); color:var(--c-text2); cursor:pointer; }
+.month-chip.active { background:var(--c-primary); border-color:var(--c-primary); color:#fff; }
+
+/* ── PROGRESS BAR ────────────────────────────────────── */
+.progress-wrap { background:var(--c-surface2); border-radius:99px; height:8px; overflow:hidden; margin-top:6px; }
+.progress-fill { height:100%; background:linear-gradient(90deg, var(--c-primary), var(--c-accent)); border-radius:99px; transition:width .4s ease; }
+
+/* ── MODAL / BOTTOM SHEET ────────────────────────────── */
+.overlay { position:fixed; inset:0; background:rgba(0,0,0,.4); z-index:200; display:none; align-items:flex-end; justify-content:center; }
+.overlay.show { display:flex; animation:fadeIn .2s; }
+@keyframes fadeIn { from{opacity:0} to{opacity:1} }
+.sheet { background:var(--c-surface); border-radius:20px 20px 0 0; padding:8px 20px 32px; width:100%; max-width:480px; animation:slideUp .25s ease; }
+@keyframes slideUp { from{transform:translateY(60px);opacity:0} to{transform:none;opacity:1} }
+.sheet-handle { width:36px; height:4px; background:var(--c-border); border-radius:2px; margin:0 auto 18px; }
+.sheet h3 { font-size:16px; font-weight:700; margin-bottom:16px; }
+
+/* ── METODE BAYAR ────────────────────────────────────── */
+.metode-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:20px; }
+.metode-btn { padding:14px 8px; border:2px solid var(--c-border); border-radius:12px; background:var(--c-surface); display:flex; flex-direction:column; align-items:center; gap:6px; cursor:pointer; font-family:var(--font); font-size:12px; font-weight:600; color:var(--c-text2); transition:all .15s; }
+.metode-btn.active { border-color:var(--c-primary); background:var(--c-primary-l); color:var(--c-primary); }
+.metode-btn svg { width:24px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ══════════ LOGIN ══════════ -->
+<div class="page active" id="pg-login">
+  <div class="login-logo">
+    <div class="drop">
+      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/></svg>
+    </div>
+    <h1>SiPAM</h1>
+    <p>Sistem Pembayaran Air Minum</p>
+  </div>
+  <div class="login-card">
+    <h2>Masuk ke sistem</h2>
+    <div class="login-err" id="login-err"></div>
+    <div class="form-group">
+      <label class="form-label">Username</label>
+      <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username" autocomplete="username"/>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password" autocomplete="current-password"/>
+    </div>
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Masuk
+    </button>
+  </div>
+</div>
+
+<!-- ══════════ DASHBOARD ══════════ -->
+<div class="page" id="pg-dashboard">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div>
+        <div class="sub" id="dash-greeting">Selamat datang</div>
+        <h1 id="dash-nama">—</h1>
+      </div>
+      <button class="topbar-icon" onclick="doLogout()" title="Keluar">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="s-total">—</div></div>
+      <div class="stat-box"><div class="stat-label">Sudah Bayar</div><div class="stat-val green" id="s-lunas">—</div></div>
+      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="s-belum">—</div></div>
+      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm blue" id="s-nominal">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-body" style="padding:14px 16px;">
+        <div class="stat-label" style="margin-bottom:6px;">Progress pembayaran bulan ini</div>
+        <div class="progress-wrap"><div class="progress-fill" id="s-progress" style="width:0%"></div></div>
+        <div style="text-align:right;font-size:11px;color:var(--c-text3);margin-top:4px;" id="s-pct">0%</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
+      <div class="card-body" id="dash-belum-list">
+        <div class="loading"><div class="spinner"></div> Memuat data…</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav" id="nav-dashboard">
+    <button class="nav-item active" onclick="goPage('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="goPage('pelanggan')">
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Cari
+    </button>
+    <button class="nav-item" onclick="goPage('meteran')">
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Catat
+    </button>
+    <button class="nav-item" onclick="goPage('laporan')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Laporan
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════ CARI PELANGGAN ══════════ -->
+<div class="page" id="pg-pelanggan">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div><h1>Cari Pelanggan</h1><div class="sub">Ketik nama atau nomor rumah</div></div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="search-wrap">
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <input class="search-input" id="search-input" type="search" placeholder="Cari nama / no. rumah…" oninput="doSearch(this.value)"/>
+    </div>
+    <div id="search-results"></div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goPage('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item active" onclick="goPage('pelanggan')">
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Cari
+    </button>
+    <button class="nav-item" onclick="goPage('meteran')">
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Catat
+    </button>
+    <button class="nav-item" onclick="goPage('laporan')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Laporan
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════ CATAT METERAN ══════════ -->
+<div class="page" id="pg-meteran">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div><h1>Catat Meteran</h1><div class="sub">Input pemakaian air bulan ini</div></div>
+    </div>
+  </div>
+  <div class="page-body">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Cari Pelanggan</span></div>
+      <div class="card-body">
+        <div class="search-wrap" style="margin-bottom:0">
+          <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <input class="search-input" id="met-search" type="search" placeholder="Ketik nama / no. rumah…" oninput="doMetSearch(this.value)"/>
+        </div>
+        <div id="met-search-results" style="margin-top:10px;"></div>
+      </div>
+    </div>
+    <div class="card" id="met-form-card" style="display:none;">
+      <div class="card-header"><span class="card-title">Data Meteran</span></div>
+      <div class="card-body">
+        <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
+        <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
+        <!-- Info meter terakhir tercatat -->
+        <div id="met-last-info" style="display:none;margin-bottom:12px;">
+          <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <div>
+              <div style="font-size:11px;color:var(--c-green);font-weight:600;">Meter terakhir tercatat</div>
+              <div style="font-size:13px;color:var(--c-text);margin-top:1px;">
+                <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Peringatan belum ada riwayat -->
+        <div id="met-no-history" style="display:none;margin-bottom:12px;">
+          <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <div style="font-size:12px;color:var(--c-amber);">Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Meter Bulan Lalu</label>
+            <input class="form-input" id="met-lalu" type="number" placeholder="0" oninput="hitungPemakaian()"/>
+            <div class="form-hint" id="met-lalu-hint">m³</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Meter Berjalan</label>
+            <input class="form-input" id="met-jalan" type="number" placeholder="0" oninput="hitungPemakaian()"/>
+            <div class="form-hint">m³ — baca dari alat</div>
+          </div>
+        </div>
+        <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
+          <div class="card-body" style="padding:12px 14px;">
+            <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
+            <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan</span><span class="val" id="met-tagihan">Rp 0</span></div>
+            <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
+            <div class="info-row" style="padding:6px 0;border-bottom:none;"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="met-total">Rp 5.000</span></div>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="simpanMeteran()">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
+          Simpan Data Meteran
+        </button>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goPage('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="goPage('pelanggan')">
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Cari
+    </button>
+    <button class="nav-item active" onclick="goPage('meteran')">
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Catat
+    </button>
+    <button class="nav-item" onclick="goPage('laporan')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Laporan
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════ LAPORAN ══════════ -->
+<div class="page" id="pg-laporan">
+  <div class="topbar">
+    <div class="topbar-row">
+      <div><h1>Laporan Bulanan</h1><div class="sub" id="lap-periode">—</div></div>
+    </div>
+  </div>
+  <div class="page-body">
+    <!-- Filter Bulan & Tahun -->
+    <div class="card" style="margin-bottom:12px;">
+      <div class="card-header"><span class="card-title">Filter Periode</span></div>
+      <div class="card-body">
+        <div class="form-row" style="margin-bottom:12px;">
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Bulan</label>
+            <select class="form-input" id="lap-filter-bulan">
+              <option value="Januari">Januari</option>
+              <option value="Februari">Februari</option>
+              <option value="Maret">Maret</option>
+              <option value="April">April</option>
+              <option value="Mei">Mei</option>
+              <option value="Juni">Juni</option>
+              <option value="Juli">Juli</option>
+              <option value="Agustus">Agustus</option>
+              <option value="September">September</option>
+              <option value="Oktober">Oktober</option>
+              <option value="November">November</option>
+              <option value="Desember">Desember</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Tahun</label>
+            <select class="form-input" id="lap-filter-tahun"></select>
+          </div>
+        </div>
+        <button class="btn btn-primary" onclick="terapkanFilterLaporan()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          Tampilkan Laporan
+        </button>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="lap-total">—</div></div>
+      <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
+      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
+      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-title">Piutang Tersisa</span><span class="badge badge-red" id="lap-piutang">—</span></div>
+      <div class="card-body" id="lap-list">
+        <div class="loading"><div class="spinner"></div> Memuat…</div>
+      </div>
+    </div>
+  </div>
+  <nav class="bottom-nav">
+    <button class="nav-item" onclick="goPage('dashboard')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Dashboard
+    </button>
+    <button class="nav-item" onclick="goPage('pelanggan')">
+      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Cari
+    </button>
+    <button class="nav-item" onclick="goPage('meteran')">
+      <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Catat
+    </button>
+    <button class="nav-item active" onclick="goPage('laporan')">
+      <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Laporan
+    </button>
+  </nav>
+</div>
+
+<!-- ══════════ DETAIL PELANGGAN ══════════ -->
+<div class="page" id="pg-detail">
+  <div class="topbar">
+    <button class="back-btn" id="detail-back" onclick="goBack()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      Kembali
+    </button>
+    <div><h1 id="detail-nama">—</h1><div class="sub" id="detail-norumah">—</div></div>
+  </div>
+  <div class="page-body">
+    <div class="card">
+      <div class="card-header"><span class="card-title">Info Pelanggan</span></div>
+      <div class="card-body">
+        <div class="info-row"><span class="lbl">Alamat</span><span class="val" id="detail-alamat">—</span></div>
+        <div class="info-row"><span class="lbl">No Telepon</span><span class="val mono" id="detail-telp">—</span></div>
+        <div class="info-row"><span class="lbl">ID Pelanggan</span><span class="val mono" id="detail-id">—</span></div>
+      </div>
+    </div>
+    <div class="card" id="detail-tagihan-card">
+      <div class="card-header"><span class="card-title">Tagihan Bulan Ini</span><span id="detail-badge" class="badge">—</span></div>
+      <div class="card-body">
+        <div class="info-row"><span class="lbl">Pemakaian</span><span class="val big" id="detail-pakai">—</span></div>
+        <div class="info-row"><span class="lbl">Tagihan Air</span><span class="val" id="detail-tagihan">—</span></div>
+        <div class="info-row"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
+        <div class="info-row"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
+      </div>
+    </div>
+    <div id="detail-actions"></div>
+  </div>
+</div>
+
+<!-- ══════════ MODAL BAYAR ══════════ -->
+<div class="overlay" id="modal-bayar" onclick="closeModal()">
+  <div class="sheet" onclick="event.stopPropagation()">
+    <div class="sheet-handle"></div>
+    <h3>Konfirmasi Pembayaran</h3>
+    <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="modal-nama">—</span></div>
+    <div class="info-row"><span class="lbl">Total Bayar</span><span class="val total" id="modal-total">—</span></div>
+    <div class="divider"></div>
+    <div class="section-label">Metode Pembayaran</div>
+    <div class="metode-grid">
+      <button class="metode-btn active" id="met-tunai" onclick="pilihMetode('Tunai')">
+        <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>
+        Tunai
+      </button>
+      <button class="metode-btn" id="met-transfer" onclick="pilihMetode('Transfer')">
+        <svg fill="none" viewBox="0 0 24 24"><path d="M8 6l4-4 4 4M16 18l-4 4-4-4M12 2v20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Transfer
+      </button>
+      <button class="metode-btn" id="met-qris" onclick="pilihMetode('QRIS')">
+        <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><path d="M14 14h2M17 14h3M14 17v3M17 17h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        QRIS
+      </button>
+    </div>
+    <button class="btn btn-green" onclick="konfirmasiBayar()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+      Tandai Lunas
+    </button>
+    <button class="btn btn-outline" style="margin-top:8px;" onclick="closeModal()">Batal</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ════════════════════════════════════════════════════════
+//  CONFIG — ganti URL setelah deploy Google Apps Script
+// ════════════════════════════════════════════════════════
+const API_URL = "https://script.google.com/macros/s/AKfycbxejyw0XMWTKbLkd7DHbmY-EgiqUQMwGbLqjip0-MwWOOqy_lAFdB5FgtCd-Jk2uNFB/exec";
+const BULAN_INI = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"][new Date().getMonth()];
+const TAHUN_INI = new Date().getFullYear();
+const BULAN_NAMA = BULAN_INI;
+
+// ── State ────────────────────────────────────────────────
+let session     = JSON.parse(sessionStorage.getItem("sipam_session") || "null");
+let allPelanggan= [];
+let currentPel  = null;
+let currentTrx  = null;
+let metodeAktif = "Tunai";
+let fromPage    = "dashboard";
+
+// ── Init ─────────────────────────────────────────────────
+window.onload = () => {
+  if (session?.token) {
+    showApp();
+  } else {
+    showPage("pg-login");
+  }
+};
+
+// ════════════════════════════════════════════════════════
+//  API CALL
+// ════════════════════════════════════════════════════════
+async function api(body) {
+  // Mode demo: simulasi tanpa Apps Script
+  if (API_URL.includes("GANTI")) return demoApi(body);
+  const res = await fetch(API_URL, {
+    method:"POST", body:JSON.stringify(body),
+    headers:{"Content-Type":"application/json"}
+  });
+  return res.json();
+}
+
+// ════════════════════════════════════════════════════════
+//  DEMO MODE (tanpa koneksi ke Google Sheets)
+// ════════════════════════════════════════════════════════
+const DEMO_USERS = [
+  {username:"admin",    password:"admin123",   nama:"Administrator",    role:"admin"},
+  {username:"petugas.a",password:"petugas123", nama:"Petugas Lapangan A",role:"petugas"},
+];
+const DEMO_PEL = [
+  {id_pelanggan:"PLG-001",no_rumah:"A-01",nama:"Budi Santoso",  alamat:"Jl. Mawar No. 1",  no_telpon:"081234567890"},
+  {id_pelanggan:"PLG-002",no_rumah:"A-02",nama:"Siti Rahayu",   alamat:"Jl. Mawar No. 2",  no_telpon:"081234567891"},
+  {id_pelanggan:"PLG-003",no_rumah:"A-03",nama:"Ahmad Fauzi",   alamat:"Jl. Melati No. 5", no_telpon:"081234567892"},
+  {id_pelanggan:"PLG-004",no_rumah:"A-04",nama:"Dewi Lestari",  alamat:"Jl. Melati No. 7", no_telpon:"081234567893"},
+  {id_pelanggan:"PLG-005",no_rumah:"A-05",nama:"Hendra Wijaya", alamat:"Jl. Anggrek No. 3",no_telpon:"081234567894"},
+  {id_pelanggan:"PLG-006",no_rumah:"A-06",nama:"Rina Susanti",  alamat:"Jl. Anggrek No. 5",no_telpon:"081234567895"},
+  {id_pelanggan:"PLG-007",no_rumah:"A-07",nama:"Joko Prabowo",  alamat:"Jl. Kenanga No. 2",no_telpon:"081234567896"},
+  {id_pelanggan:"PLG-008",no_rumah:"A-08",nama:"Maya Putri",    alamat:"Jl. Kenanga No. 4",no_telpon:"081234567897"},
+  {id_pelanggan:"PLG-009",no_rumah:"A-09",nama:"Doni Setiawan", alamat:"Jl. Flamboyan No. 1",no_telpon:"081234567898"},
+  {id_pelanggan:"PLG-010",no_rumah:"A-10",nama:"Lia Permata",   alamat:"Jl. Flamboyan No. 3",no_telpon:"081234567899"},
+];
+let DEMO_TRX = [
+  {id_transaksi:"TRX-001",id_pelanggan:"PLG-001",no_rumah:"A-01",nama:"Budi Santoso",  pemakaian:15,jumlah_bayar:27500,status:"Lunas",   tgl_bayar:"2026-06-05"},
+  {id_transaksi:"TRX-002",id_pelanggan:"PLG-002",no_rumah:"A-02",nama:"Siti Rahayu",   pemakaian:17,jumlah_bayar:30500,status:"Belum Bayar",tgl_bayar:""},
+  {id_transaksi:"TRX-003",id_pelanggan:"PLG-003",no_rumah:"A-03",nama:"Ahmad Fauzi",   pemakaian:18,jumlah_bayar:32000,status:"Lunas",   tgl_bayar:"2026-06-05"},
+  {id_transaksi:"TRX-004",id_pelanggan:"PLG-004",no_rumah:"A-04",nama:"Dewi Lestari",  pemakaian:18,jumlah_bayar:32000,status:"Lunas",   tgl_bayar:"2026-06-06"},
+  {id_transaksi:"TRX-005",id_pelanggan:"PLG-005",no_rumah:"A-05",nama:"Hendra Wijaya", pemakaian:16,jumlah_bayar:29000,status:"Belum Bayar",tgl_bayar:""},
+  {id_transaksi:"TRX-006",id_pelanggan:"PLG-006",no_rumah:"A-06",nama:"Rina Susanti",  pemakaian:17,jumlah_bayar:30500,status:"Lunas",   tgl_bayar:"2026-06-06"},
+  {id_transaksi:"TRX-007",id_pelanggan:"PLG-007",no_rumah:"A-07",nama:"Joko Prabowo",  pemakaian:15,jumlah_bayar:27500,status:"Belum Bayar",tgl_bayar:""},
+  {id_transaksi:"TRX-008",id_pelanggan:"PLG-008",no_rumah:"A-08",nama:"Maya Putri",    pemakaian:18,jumlah_bayar:32000,status:"Lunas",   tgl_bayar:"2026-06-07"},
+  {id_transaksi:"TRX-009",id_pelanggan:"PLG-009",no_rumah:"A-09",nama:"Doni Setiawan", pemakaian:18,jumlah_bayar:32000,status:"Lunas",   tgl_bayar:"2026-06-07"},
+  {id_transaksi:"TRX-010",id_pelanggan:"PLG-010",no_rumah:"A-10",nama:"Lia Permata",   pemakaian:17,jumlah_bayar:30500,status:"Belum Bayar",tgl_bayar:""},
+];
+// Data meteran demo untuk lookup meter terakhir
+let DEMO_MET_DATA = [
+  {id_pelanggan:"PLG-001",meter_berjalan:135,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-002",meter_berjalan:102,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-003",meter_berjalan:218,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-004",meter_berjalan:328,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-005",meter_berjalan:61, bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-006",meter_berjalan:195,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-007",meter_berjalan:107,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-008",meter_berjalan:278,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-009",meter_berjalan:151,bulan:"Mei",tahun:2026,urutan:1},
+  {id_pelanggan:"PLG-010",meter_berjalan:84, bulan:"Mei",tahun:2026,urutan:1},
+];
+let DEMO_TRX_COUNTER = 11;
+
+async function demoApi(body) {
+  await new Promise(r => setTimeout(r, 350));
+  const {action} = body;
+  if (action === "login") {
+    const u = DEMO_USERS.find(x => x.username===body.username && x.password===body.password);
+    if (!u) return {status:"error",message:"Username atau password salah."};
+    return {status:"ok", token:"demo-token", nama:u.nama, role:u.role, id_user:"USR-DEMO"};
+  }
+  if (action === "getPelanggan") return {status:"ok", data:DEMO_PEL};
+  if (action === "searchPelanggan") {
+    const kw = body.keyword.toLowerCase();
+    return {status:"ok", data: DEMO_PEL.filter(p =>
+      p.no_rumah.toLowerCase().includes(kw) || p.nama.toLowerCase().includes(kw))};
+  }
+  if (action === "getLastMeter") {
+    // Cari meter berjalan terakhir pelanggan ini dari riwayat meteran demo
+    // Di demo, kita simulasikan dari data DEMO_TRX (ambil pemakaian + meter bulan lalu)
+    // Meteran demo: meter_berjalan tersimpan di DEMO_MET_DATA
+    const found = DEMO_MET_DATA.filter(m => m.id_pelanggan === body.id_pelanggan)
+                               .sort((a,b) => b.urutan - a.urutan)[0];
+    if (found) return { status:"ok", meter_berjalan: found.meter_berjalan, bulan: found.bulan, tahun: found.tahun };
+    return { status:"ok", meter_berjalan: null };
+  }
+  if (action === "saveMeteran") {
+    const d = body.data;
+    const pakai = d.meter_berjalan - d.meter_lalu;
+    const tagihan = pakai * 1500;
+    const existing = DEMO_TRX.find(t => t.id_pelanggan === d.id_pelanggan);
+    if (existing) {
+      existing.pemakaian = pakai;
+      existing.jumlah_bayar = tagihan + 5000;
+      existing.status = "Belum Bayar";
+    } else {
+      DEMO_TRX.push({
+        id_transaksi: `TRX-0${DEMO_TRX_COUNTER++}`,
+        id_pelanggan: d.id_pelanggan,
+        no_rumah: d.no_rumah, nama: d.nama,
+        pemakaian: pakai, jumlah_bayar: tagihan+5000,
+        status:"Belum Bayar", tgl_bayar:""
+      });
+    }
+    // Update riwayat meter terakhir agar bulan depan auto-fill
+    const existMet = DEMO_MET_DATA.findIndex(m => m.id_pelanggan === d.id_pelanggan);
+    const newMet = { id_pelanggan: d.id_pelanggan, meter_berjalan: d.meter_berjalan, bulan: d.bulan, tahun: d.tahun, urutan: Date.now() };
+    if (existMet >= 0) DEMO_MET_DATA[existMet] = newMet; else DEMO_MET_DATA.push(newMet);
+    return {status:"ok", message:"Data meteran berhasil disimpan."};
+  }
+  if (action === "saveTransaksi") {
+    const t = DEMO_TRX.find(x => x.id_transaksi===body.id_transaksi);
+    if (t) { t.status="Lunas"; t.tgl_bayar=new Date().toISOString().split("T")[0]; }
+    return {status:"ok", message:"Pembayaran berhasil dicatat."};
+  }
+  if (action === "getLaporan") {
+    const lunas  = DEMO_TRX.filter(t=>t.status==="Lunas");
+    const belum  = DEMO_TRX.filter(t=>t.status==="Belum Bayar");
+    const terkumpul = lunas.reduce((s,t)=>s+t.jumlah_bayar,0);
+    const piutang   = belum.reduce((s,t)=>s+t.jumlah_bayar,0);
+    return {status:"ok", laporan:{
+      bulan:BULAN_INI, tahun:TAHUN_INI,
+      total_pelanggan:DEMO_TRX.length,
+      sudah_bayar:lunas.length, belum_bayar:belum.length,
+      total_terkumpul:terkumpul, total_piutang:piutang,
+    }, detail:DEMO_TRX};
+  }
+  return {status:"error", message:"Action tidak dikenal"};
+}
+
+// ════════════════════════════════════════════════════════
+//  LOGIN / LOGOUT
+// ════════════════════════════════════════════════════════
+async function doLogin() {
+  const username = document.getElementById("inp-username").value.trim();
+  const password = document.getElementById("inp-password").value;
+  const errEl    = document.getElementById("login-err");
+  const btn      = document.getElementById("btn-login");
+  if (!username || !password) { showErr("Username dan password wajib diisi."); return; }
+  btn.textContent = "Memverifikasi…"; btn.disabled = true;
+  const res = await api({action:"login", username, password});
+  btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg> Masuk`;
+  btn.disabled = false;
+  if (res.status !== "ok") { showErr(res.message); return; }
+  errEl.style.display = "none";
+  session = {token:res.token, nama:res.nama, role:res.role, id_user:res.id_user};
+  sessionStorage.setItem("sipam_session", JSON.stringify(session));
+  showApp();
+}
+function showErr(msg) {
+  const e = document.getElementById("login-err");
+  e.textContent = msg; e.style.display = "block";
+}
+function doLogout() {
+  sessionStorage.removeItem("sipam_session"); session = null;
+  showPage("pg-login");
+  document.getElementById("inp-username").value = "";
+  document.getElementById("inp-password").value = "";
+}
+document.getElementById("inp-password").addEventListener("keydown", e => { if(e.key==="Enter") doLogin(); });
+
+// ════════════════════════════════════════════════════════
+//  NAVIGATION
+// ════════════════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function showApp() {
+  const h = new Date().getHours();
+  const greeting = h<12?"Selamat pagi":h<15?"Selamat siang":h<18?"Selamat sore":"Selamat malam";
+  document.getElementById("dash-greeting").textContent = greeting + ", " + (session?.role==="admin"?"Admin":"Petugas");
+  document.getElementById("dash-nama").textContent = session?.nama || "—";
+  showPage("pg-dashboard");
+  loadDashboard();
+}
+function goPage(page) {
+  const map = {dashboard:"pg-dashboard",pelanggan:"pg-pelanggan",meteran:"pg-meteran",laporan:"pg-laporan"};
+  showPage(map[page]);
+  if (page==="dashboard") loadDashboard();
+  if (page==="laporan")   { initFilterLaporan(); loadLaporan(); }
+  if (page==="pelanggan") { document.getElementById("search-input").value=""; renderSearchResults([]); }
+  if (page==="meteran")   { document.getElementById("met-search").value=""; document.getElementById("met-search-results").innerHTML=""; document.getElementById("met-form-card").style.display="none"; }
+}
+function goBack() {
+  showPage(fromPage === "meteran" ? "pg-meteran" : fromPage === "pelanggan" ? "pg-pelanggan" : "pg-dashboard");
+}
+
+// ════════════════════════════════════════════════════════
+//  DASHBOARD
+// ════════════════════════════════════════════════════════
+async function loadDashboard() {
+  const res = await api({action:"getLaporan", token:session?.token, bulan:BULAN_INI, tahun:TAHUN_INI});
+  if (res.status !== "ok") return;
+  const {laporan, detail} = res;
+  document.getElementById("s-total").textContent  = laporan.total_pelanggan;
+  document.getElementById("s-lunas").textContent  = laporan.sudah_bayar;
+  document.getElementById("s-belum").textContent  = laporan.belum_bayar;
+  document.getElementById("s-nominal").textContent= rp(laporan.total_terkumpul);
+  const pct = laporan.total_pelanggan ? Math.round(laporan.sudah_bayar/laporan.total_pelanggan*100) : 0;
+  document.getElementById("s-progress").style.width = pct+"%";
+  document.getElementById("s-pct").textContent = pct+"% lunas";
+  const belum = (detail||[]).filter(t=>t.status==="Belum Bayar");
+  const listEl = document.getElementById("dash-belum-list");
+  if (!belum.length) {
+    listEl.innerHTML = `<div class="empty"><svg fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg><p>Semua pelanggan sudah lunas! 🎉</p></div>`;
+    return;
+  }
+  listEl.innerHTML = belum.map(t => `
+    <div class="pel-item" onclick="openDetailFromDash('${t.id_pelanggan}','${t.id_transaksi}')">
+      <div class="avatar av-a">${initials(t.nama)}</div>
+      <div class="pel-info">
+        <div class="pel-name">${t.nama}</div>
+        <div class="pel-sub">${t.no_rumah} · ${rp(t.jumlah_bayar)}</div>
+      </div>
+      <span class="badge badge-red">Belum</span>
+    </div>`).join("");
+}
+
+// ════════════════════════════════════════════════════════
+//  CARI PELANGGAN
+// ════════════════════════════════════════════════════════
+let searchTimer;
+function doSearch(val) {
+  clearTimeout(searchTimer);
+  if (!val.trim()) { renderSearchResults([]); return; }
+  searchTimer = setTimeout(async () => {
+    const res = await api({action:"searchPelanggan", token:session?.token, keyword:val});
+    if (res.status==="ok") renderSearchResults(res.data);
+  }, 300);
+}
+function renderSearchResults(list) {
+  const el = document.getElementById("search-results");
+  if (!list.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div class="card"><div class="card-body" style="padding:0 16px;">${
+    list.map((p,i) => `
+      <div class="pel-item" onclick="openDetail('${p.id_pelanggan}','pelanggan')">
+        <div class="avatar ${['av-b','av-g','av-a'][i%3]}">${initials(p.nama)}</div>
+        <div class="pel-info">
+          <div class="pel-name">${p.nama}</div>
+          <div class="pel-sub">${p.no_rumah} · ${p.alamat}</div>
+        </div>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>`).join("")
+  }</div></div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  DETAIL PELANGGAN
+// ════════════════════════════════════════════════════════
+async function openDetail(id_pelanggan, from="dashboard") {
+  fromPage = from;
+  if (!allPelanggan.length) {
+    const res = await api({action:"getPelanggan", token:session?.token});
+    if (res.status==="ok") allPelanggan = res.data;
+  }
+  const pel = allPelanggan.find(p=>p.id_pelanggan===id_pelanggan);
+  if (!pel) return;
+  currentPel = pel;
+  document.getElementById("detail-nama").textContent   = pel.nama;
+  document.getElementById("detail-norumah").textContent = pel.no_rumah;
+  document.getElementById("detail-alamat").textContent  = pel.alamat;
+  document.getElementById("detail-telp").textContent    = pel.no_telpon || "—";
+  document.getElementById("detail-id").textContent      = pel.id_pelanggan;
+  // Cari transaksi pelanggan ini
+  const lapRes = await api({action:"getLaporan", token:session?.token, bulan:BULAN_INI, tahun:TAHUN_INI});
+  const trx = lapRes.status==="ok" ? lapRes.detail?.find(t=>t.id_pelanggan===id_pelanggan) : null;
+  const actionsEl = document.getElementById("detail-actions");
+  if (trx) {
+    currentTrx = trx;
+    const lunas = trx.status==="Lunas";
+    document.getElementById("detail-pakai").textContent   = trx.pemakaian+" m³";
+    document.getElementById("detail-tagihan").textContent = rp(trx.pemakaian*1500);
+    document.getElementById("detail-total").textContent   = rp(trx.jumlah_bayar);
+    const badge = document.getElementById("detail-badge");
+    badge.textContent = lunas ? "Lunas" : "Belum Bayar";
+    badge.className   = "badge "+(lunas ? "badge-green":"badge-red");
+    actionsEl.innerHTML = lunas
+      ? `<div class="card"><div class="card-body" style="text-align:center;color:var(--c-green);padding:20px;"><b>✓ Sudah Lunas</b><br><small style="color:var(--c-text3)">${trx.tgl_bayar}</small></div></div>`
+      : `<button class="btn btn-green" onclick="openModal()"><svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Terima Pembayaran</button>`;
+  } else {
+    document.getElementById("detail-pakai").textContent   = "—";
+    document.getElementById("detail-tagihan").textContent = "—";
+    document.getElementById("detail-total").textContent   = "—";
+    document.getElementById("detail-badge").textContent   = "Belum Dicatat";
+    document.getElementById("detail-badge").className     = "badge badge-amber";
+    actionsEl.innerHTML = `<p style="color:var(--c-text3);font-size:13px;text-align:center;padding:16px 0;">Meteran bulan ini belum dicatat.</p>`;
+  }
+  showPage("pg-detail");
+}
+function openDetailFromDash(id_pelanggan, id_transaksi) { openDetail(id_pelanggan, "dashboard"); }
+
+// ════════════════════════════════════════════════════════
+//  CATAT METERAN
+// ════════════════════════════════════════════════════════
+let selPelMet = null;
+let metSearchTimer;
+function doMetSearch(val) {
+  clearTimeout(metSearchTimer);
+  if (!val.trim()) { document.getElementById("met-search-results").innerHTML=""; return; }
+  metSearchTimer = setTimeout(async () => {
+    const res = await api({action:"searchPelanggan", token:session?.token, keyword:val});
+    if (res.status!=="ok") return;
+    const el = document.getElementById("met-search-results");
+    el.innerHTML = res.data.length ? res.data.map(p=>`
+      <div class="pel-item" style="padding:10px 0;cursor:pointer;" onclick="pilihPelMet('${p.id_pelanggan}')">
+        <div class="avatar av-b">${initials(p.nama)}</div>
+        <div class="pel-info">
+          <div class="pel-name">${p.nama}</div>
+          <div class="pel-sub">${p.no_rumah}</div>
+        </div>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>`).join("") : `<p style="color:var(--c-text3);font-size:13px;">Tidak ditemukan.</p>`;
+  }, 300);
+}
+async function pilihPelMet(id) {
+  if (!allPelanggan.length) {
+    const res = await api({action:"getPelanggan", token:session?.token});
+    if (res.status==="ok") allPelanggan = res.data;
+  }
+  selPelMet = allPelanggan.find(p=>p.id_pelanggan===id);
+  if (!selPelMet) return;
+
+  document.getElementById("met-nama-lbl").textContent = selPelMet.nama;
+  document.getElementById("met-no-lbl").textContent   = selPelMet.no_rumah;
+  document.getElementById("met-lalu").value  = "";
+  document.getElementById("met-jalan").value = "";
+  document.getElementById("met-last-info").style.display    = "none";
+  document.getElementById("met-no-history").style.display   = "none";
+  hitungPemakaian();
+  document.getElementById("met-form-card").style.display = "block";
+  document.getElementById("met-search-results").innerHTML = "";
+  document.getElementById("met-search").value = selPelMet.nama;
+
+  // Ambil riwayat meteran terakhir pelanggan ini
+  const histRes = await api({action:"getLastMeter", token:session?.token, id_pelanggan: id});
+  if (histRes.status === "ok" && histRes.meter_berjalan != null) {
+    // Auto-isi meter bulan lalu dari meter berjalan terakhir
+    document.getElementById("met-lalu").value = histRes.meter_berjalan;
+    document.getElementById("met-lalu").setAttribute("readonly", true);
+    document.getElementById("met-lalu-hint").textContent  = `m³ — otomatis dari ${histRes.bulan}`;
+    document.getElementById("met-last-bulan").textContent = histRes.bulan + " " + histRes.tahun;
+    document.getElementById("met-last-nilai").textContent = histRes.meter_berjalan;
+    document.getElementById("met-last-info").style.display = "flex";
+    hitungPemakaian();
+  } else {
+    // Tidak ada riwayat — biarkan isi manual
+    document.getElementById("met-lalu").removeAttribute("readonly");
+    document.getElementById("met-lalu-hint").textContent = "m³ — isi manual";
+    document.getElementById("met-no-history").style.display = "flex";
+  }
+}
+function hitungPemakaian() {
+  const lalu  = parseFloat(document.getElementById("met-lalu").value)  || 0;
+  const jalan = parseFloat(document.getElementById("met-jalan").value) || 0;
+  const pakai = Math.max(0, jalan - lalu);
+  const tagihan   = pakai * 1500;
+  const total     = tagihan + 5000;
+  document.getElementById("met-pakai").textContent   = pakai+" m³";
+  document.getElementById("met-tagihan").textContent = rp(tagihan);
+  document.getElementById("met-total").textContent   = rp(total);
+}
+async function simpanMeteran() {
+  if (!selPelMet) { showToast("Pilih pelanggan dahulu","error"); return; }
+  const lalu  = parseFloat(document.getElementById("met-lalu").value);
+  const jalan = parseFloat(document.getElementById("met-jalan").value);
+  if (isNaN(lalu)||isNaN(jalan)) { showToast("Isi meter bulan lalu & berjalan","error"); return; }
+  if (jalan < lalu) { showToast("Meter berjalan tidak boleh lebih kecil","error"); return; }
+  const n = String(DEMO_MET_COUNTER).padStart(3,"0");
+  const res = await api({action:"saveMeteran", token:session?.token, data:{
+    id_meteran   : `MET-${n}`,
+    id_transaksi : `TRX-${n}`,
+    id_pelanggan : selPelMet.id_pelanggan,
+    no_rumah     : selPelMet.no_rumah,
+    nama         : selPelMet.nama,
+    bulan        : BULAN_INI,
+    tahun        : TAHUN_INI,
+    meter_lalu   : lalu,
+    meter_berjalan: jalan,
+    petugas      : session?.nama,
+  }});
+  if (res.status==="ok") {
+    DEMO_MET_COUNTER++;
+    showToast("Data meteran disimpan ✓","success");
+    document.getElementById("met-form-card").style.display="none";
+    document.getElementById("met-search").value="";
+    selPelMet = null;
+  } else {
+    showToast(res.message,"error");
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  LAPORAN
+// ════════════════════════════════════════════════════════
+function initFilterLaporan() {
+  // Populate tahun: 3 tahun ke belakang s/d tahun ini
+  const selTahun = document.getElementById("lap-filter-tahun");
+  selTahun.innerHTML = "";
+  for (let y = TAHUN_INI; y >= TAHUN_INI - 3; y--) {
+    const opt = document.createElement("option");
+    opt.value = y; opt.textContent = y;
+    selTahun.appendChild(opt);
+  }
+  // Set default bulan & tahun = periode berjalan
+  document.getElementById("lap-filter-bulan").value = BULAN_INI;
+  document.getElementById("lap-filter-tahun").value = TAHUN_INI;
+}
+
+function terapkanFilterLaporan() {
+  const bulan = document.getElementById("lap-filter-bulan").value;
+  const tahun = parseInt(document.getElementById("lap-filter-tahun").value);
+  loadLaporan(bulan, tahun);
+}
+
+async function loadLaporan(bulan = BULAN_INI, tahun = TAHUN_INI) {
+  document.getElementById("lap-periode").textContent = `${bulan} ${tahun}`;
+  // Tampilkan loading di stats
+  ["lap-total","lap-lunas","lap-belum","lap-terkumpul","lap-piutang"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = "…";
+  });
+  document.getElementById("lap-list").innerHTML =
+    `<div class="loading"><div class="spinner"></div> Memuat data ${bulan} ${tahun}…</div>`;
+
+  const res = await api({action:"getLaporan", token:session?.token, bulan, tahun});
+  if (res.status!=="ok") {
+    document.getElementById("lap-list").innerHTML =
+      `<div class="empty"><p>Gagal memuat data. Coba lagi.</p></div>`;
+    return;
+  }
+  const {laporan, detail} = res;
+  document.getElementById("lap-total").textContent     = laporan.total_pelanggan;
+  document.getElementById("lap-lunas").textContent     = laporan.sudah_bayar;
+  document.getElementById("lap-belum").textContent     = laporan.belum_bayar;
+  document.getElementById("lap-terkumpul").textContent = rp(laporan.total_terkumpul);
+  document.getElementById("lap-piutang").textContent   = rp(laporan.total_piutang);
+
+  const belum = (detail||[]).filter(t=>t.status==="Belum Bayar");
+  const el = document.getElementById("lap-list");
+  el.innerHTML = belum.length
+    ? belum.map(t=>`
+      <div class="pel-item">
+        <div class="avatar av-a">${initials(t.nama)}</div>
+        <div class="pel-info">
+          <div class="pel-name">${t.nama}</div>
+          <div class="pel-sub">${t.no_rumah} · ${rp(t.jumlah_bayar)}</div>
+        </div>
+        <span class="badge badge-red">Belum</span>
+      </div>`).join("")
+    : `<div class="empty"><p>Semua sudah lunas pada ${bulan} ${tahun} 🎉</p></div>`;
+}
+
+// ════════════════════════════════════════════════════════
+//  MODAL BAYAR
+// ════════════════════════════════════════════════════════
+function openModal() {
+  if (!currentTrx) return;
+  document.getElementById("modal-nama").textContent  = currentPel?.nama || "—";
+  document.getElementById("modal-total").textContent = rp(currentTrx.jumlah_bayar);
+  pilihMetode("Tunai");
+  document.getElementById("modal-bayar").classList.add("show");
+}
+function closeModal() { document.getElementById("modal-bayar").classList.remove("show"); }
+function pilihMetode(m) {
+  metodeAktif = m;
+  ["Tunai","Transfer","QRIS"].forEach(x => {
+    document.getElementById("met-"+x.toLowerCase()).classList.toggle("active", x===m);
+  });
+}
+async function konfirmasiBayar() {
+  const res = await api({action:"saveTransaksi", token:session?.token,
+    id_transaksi: currentTrx.id_transaksi,
+    metode_bayar: metodeAktif,
+    petugas: session?.nama
+  });
+  closeModal();
+  if (res.status==="ok") {
+    showToast("Pembayaran berhasil dicatat ✓","success");
+    setTimeout(() => openDetail(currentPel.id_pelanggan, fromPage), 500);
+  } else {
+    showToast(res.message,"error");
+  }
+}
+
+// ════════════════════════════════════════════════════════
+//  HELPERS
+// ════════════════════════════════════════════════════════
+function rp(n) { return "Rp "+Number(n||0).toLocaleString("id-ID"); }
+function initials(nama) {
+  return (nama||"").split(" ").slice(0,2).map(w=>w[0]||"").join("").toUpperCase();
+}
+let toastTimer;
+function showToast(msg, type="") {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.className   = "toast show" + (type ? " "+type : "");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.className="toast", 2800);
+}
+</script>
+</body>
+</html>
