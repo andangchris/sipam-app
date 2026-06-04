@@ -13,67 +13,246 @@
 <body>
 <div id="app">
 
-<!-- ══════════ LOGIN ══════════ -->
-<div class="page active" id="pg-login">
-  <div class="login-logo">
-    <div class="drop">
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/></svg>
-    </div>
-    <h1>SiPAM</h1>
-    <p>Sistem Pembayaran Air Minum</p>
-  </div>
-  <div class="login-card">
-    <h2>Masuk ke sistem</h2>
-    <div class="login-err" id="login-err"></div>
-    <div class="form-group">
-      <label class="form-label">Username</label>
-      <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username" autocomplete="username"/>
-    </div>
-    <div class="form-group">
-      <label class="form-label">Password</label>
-      <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password" autocomplete="current-password"/>
-    </div>
-    <button class="btn btn-primary" id="btn-login">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Masuk
-    </button>
-  </div>
-</div>
-
-<!-- ══════════ DASHBOARD ══════════ -->
-<div class="page" id="pg-dashboard">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div>
-        <div class="sub" id="dash-greeting">Selamat datang</div>
-        <h1 id="dash-nama">—</h1>
+<!-- ══════════ LOGIN PAGE ══════════ -->
+<div id="pg-login" class="page active">
+  <div class="login-container">
+    <div class="login-logo">
+      <div class="drop">
+        <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/></svg>
       </div>
-      <button class="topbar-icon" id="btn-logout" title="Keluar">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <h1>SiPAM</h1>
+      <p>Sistem Pembayaran Air Minum</p>
+    </div>
+    <div class="login-card">
+      <h2>Masuk ke sistem</h2>
+      <div class="login-err" id="login-err"></div>
+      <div class="form-group">
+        <label class="form-label">Username</label>
+        <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username" autocomplete="username"/>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Password</label>
+        <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password" autocomplete="current-password"/>
+      </div>
+      <button class="btn btn-primary" id="btn-login">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Masuk
       </button>
     </div>
   </div>
-  <div class="page-body">
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="s-total">—</div></div>
-      <div class="stat-box"><div class="stat-label">Sudah Bayar</div><div class="stat-val green" id="s-lunas">—</div></div>
-      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="s-belum">—</div></div>
-      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm blue" id="s-nominal">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-body" style="padding:14px 16px;">
-        <div class="stat-label" style="margin-bottom:6px;">Progress pembayaran bulan ini</div>
-        <div class="progress-wrap"><div class="progress-fill" id="s-progress" style="width:0%"></div></div>
-        <div style="text-align:right;font-size:11px;color:var(--c-text3);margin-top:4px;" id="s-pct">0%</div>
+</div>
+
+<!-- ══════════ MAIN APP (setelah login) ══════════ -->
+<div id="pg-main" class="page">
+  
+  <!-- DASHBOARD -->
+  <div id="pg-dashboard" class="subpage active">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div>
+          <div class="sub" id="dash-greeting">Selamat datang</div>
+          <h1 id="dash-nama">—</h1>
+        </div>
+        <button class="topbar-icon" id="btn-logout" title="Keluar">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </button>
       </div>
     </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
-      <div class="card-body" id="dash-belum-list">
-        <div class="loading"><div class="spinner"></div> Memuat data…</div>
+    <div class="page-body">
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="s-total">—</div></div>
+        <div class="stat-box"><div class="stat-label">Sudah Bayar</div><div class="stat-val green" id="s-lunas">—</div></div>
+        <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="s-belum">—</div></div>
+        <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm blue" id="s-nominal">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding:14px 16px;">
+          <div class="stat-label" style="margin-bottom:6px;">Progress pembayaran bulan ini</div>
+          <div class="progress-wrap"><div class="progress-fill" id="s-progress" style="width:0%"></div></div>
+          <div style="text-align:right;font-size:11px;color:var(--c-text3);margin-top:4px;" id="s-pct">0%</div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
+        <div class="card-body" id="dash-belum-list">
+          <div class="loading"><div class="spinner"></div> Memuat data…</div>
+        </div>
       </div>
     </div>
   </div>
+
+  <!-- CARI PELANGGAN -->
+  <div id="pg-pelanggan" class="subpage">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div><h1>Cari Pelanggan</h1><div class="sub">Ketik nama atau nomor rumah</div></div>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="search-wrap">
+        <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <input class="search-input" id="search-input" type="search" placeholder="Cari nama / no. rumah…"/>
+      </div>
+      <div id="search-results"></div>
+    </div>
+  </div>
+
+  <!-- CATAT METERAN -->
+  <div id="pg-meteran" class="subpage">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div><h1>Catat Meteran</h1><div class="sub">Input pemakaian air bulan ini</div></div>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Cari Pelanggan</span></div>
+        <div class="card-body">
+          <div class="search-wrap" style="margin-bottom:0">
+            <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            <input class="search-input" id="met-search" type="search" placeholder="Ketik nama / no. rumah…"/>
+          </div>
+          <div id="met-search-results" style="margin-top:10px;"></div>
+        </div>
+      </div>
+      <div class="card" id="met-form-card" style="display:none;">
+        <div class="card-header"><span class="card-title">Data Meteran</span></div>
+        <div class="card-body">
+          <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
+          <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
+          <div id="met-last-info" style="display:none;margin-bottom:12px;">
+            <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div>
+                <div style="font-size:11px;color:var(--c-green);font-weight:600;">Meter terakhir tercatat</div>
+                <div style="font-size:13px;color:var(--c-text);margin-top:1px;">
+                  <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="met-no-history" style="display:none;margin-bottom:12px;">
+            <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
+              <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              <div style="font-size:12px;color:var(--c-amber);">Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Meter Bulan Lalu</label>
+              <input class="form-input" id="met-lalu" type="number" placeholder="0"/>
+              <div class="form-hint" id="met-lalu-hint">m³</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Meter Berjalan</label>
+              <input class="form-input" id="met-jalan" type="number" placeholder="0"/>
+              <div class="form-hint">m³ — baca dari alat</div>
+            </div>
+          </div>
+          <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
+            <div class="card-body" style="padding:12px 14px;">
+              <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
+              <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan</span><span class="val" id="met-tagihan">Rp 0</span></div>
+              <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
+              <div class="info-row" style="padding:6px 0;border-bottom:none;"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="met-total">Rp 5.000</span></div>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-simpan-meteran">
+            <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
+            Simpan Data Meteran
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LAPORAN -->
+  <div id="pg-laporan" class="subpage">
+    <div class="topbar">
+      <div class="topbar-row">
+        <div><h1>Laporan Bulanan</h1><div class="sub" id="lap-periode">—</div></div>
+      </div>
+    </div>
+    <div class="page-body">
+      <div class="card" style="margin-bottom:12px;">
+        <div class="card-header"><span class="card-title">Filter Periode</span></div>
+        <div class="card-body">
+          <div class="form-row" style="margin-bottom:12px;">
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Bulan</label>
+              <select class="form-input" id="lap-filter-bulan">
+                <option value="Januari">Januari</option>
+                <option value="Februari">Februari</option>
+                <option value="Maret">Maret</option>
+                <option value="April">April</option>
+                <option value="Mei">Mei</option>
+                <option value="Juni">Juni</option>
+                <option value="Juli">Juli</option>
+                <option value="Agustus">Agustus</option>
+                <option value="September">September</option>
+                <option value="Oktober">Oktober</option>
+                <option value="November">November</option>
+                <option value="Desember">Desember</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:0;">
+              <label class="form-label">Tahun</label>
+              <select class="form-input" id="lap-filter-tahun"></select>
+            </div>
+          </div>
+          <button class="btn btn-primary" id="btn-filter-laporan">
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+            Tampilkan Laporan
+          </button>
+        </div>
+      </div>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="lap-total">—</div></div>
+        <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
+        <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
+        <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
+      </div>
+      <div class="card">
+        <div class="card-header"><span class="card-title">Piutang Tersisa</span><span class="badge badge-red" id="lap-piutang">—</span></div>
+        <div class="card-body" id="lap-list">
+          <div class="loading"><div class="spinner"></div> Memuat…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- DETAIL PELANGGAN -->
+  <div id="pg-detail" class="subpage">
+    <div class="topbar">
+      <button class="back-btn" id="detail-back">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Kembali
+      </button>
+      <div><h1 id="detail-nama">—</h1><div class="sub" id="detail-norumah">—</div></div>
+    </div>
+    <div class="page-body">
+      <div class="card">
+        <div class="card-header"><span class="card-title">Info Pelanggan</span></div>
+        <div class="card-body">
+          <div class="info-row"><span class="lbl">Alamat</span><span class="val" id="detail-alamat">—</span></div>
+          <div class="info-row"><span class="lbl">No Telepon</span><span class="val mono" id="detail-telp">—</span></div>
+          <div class="info-row"><span class="lbl">ID Pelanggan</span><span class="val mono" id="detail-id">—</span></div>
+        </div>
+      </div>
+      <div class="card" id="detail-tagihan-card">
+        <div class="card-header"><span class="card-title">Tagihan Bulan Ini</span><span id="detail-badge" class="badge">—</span></div>
+        <div class="card-body">
+          <div class="info-row"><span class="lbl">Pemakaian</span><span class="val big" id="detail-pakai">—</span></div>
+          <div class="info-row"><span class="lbl">Tagihan Air</span><span class="val" id="detail-tagihan">—</span></div>
+          <div class="info-row"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
+          <div class="info-row"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
+        </div>
+      </div>
+      <div id="detail-actions"></div>
+    </div>
+  </div>
+
+  <!-- BOTTOM NAVIGATION -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-page="dashboard">
       <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
@@ -94,196 +273,7 @@
   </nav>
 </div>
 
-<!-- ══════════ CARI PELANGGAN ══════════ -->
-<div class="page" id="pg-pelanggan">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Cari Pelanggan</h1><div class="sub">Ketik nama atau nomor rumah</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="search-wrap">
-      <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input class="search-input" id="search-input" type="search" placeholder="Cari nama / no. rumah…"/>
-    </div>
-    <div id="search-results"></div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item active" data-page="pelanggan">Cari</button>
-    <button class="nav-item" data-page="meteran">Catat</button>
-    <button class="nav-item" data-page="laporan">Laporan</button>
-  </nav>
-</div>
-
-<!-- ══════════ CATAT METERAN ══════════ -->
-<div class="page" id="pg-meteran">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Catat Meteran</h1><div class="sub">Input pemakaian air bulan ini</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Cari Pelanggan</span></div>
-      <div class="card-body">
-        <div class="search-wrap" style="margin-bottom:0">
-          <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input class="search-input" id="met-search" type="search" placeholder="Ketik nama / no. rumah…"/>
-        </div>
-        <div id="met-search-results" style="margin-top:10px;"></div>
-      </div>
-    </div>
-    <div class="card" id="met-form-card" style="display:none;">
-      <div class="card-header"><span class="card-title">Data Meteran</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
-        <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
-        <div id="met-last-info" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div>
-              <div style="font-size:11px;color:var(--c-green);font-weight:600;">Meter terakhir tercatat</div>
-              <div style="font-size:13px;color:var(--c-text);margin-top:1px;">
-                <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
-              </div>
-            </div>
-          </div>
-        </div>
-        <div id="met-no-history" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div style="font-size:12px;color:var(--c-amber);">Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Meter Bulan Lalu</label>
-            <input class="form-input" id="met-lalu" type="number" placeholder="0"/>
-            <div class="form-hint" id="met-lalu-hint">m³</div>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Meter Berjalan</label>
-            <input class="form-input" id="met-jalan" type="number" placeholder="0"/>
-            <div class="form-hint">m³ — baca dari alat</div>
-          </div>
-        </div>
-        <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
-          <div class="card-body" style="padding:12px 14px;">
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan</span><span class="val" id="met-tagihan">Rp 0</span></div>
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-            <div class="info-row" style="padding:6px 0;border-bottom:none;"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="met-total">Rp 5.000</span></div>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="btn-simpan-meteran">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
-          Simpan Data Meteran
-        </button>
-      </div>
-    </div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item" data-page="pelanggan">Cari</button>
-    <button class="nav-item active" data-page="meteran">Catat</button>
-    <button class="nav-item" data-page="laporan">Laporan</button>
-  </nav>
-</div>
-
-<!-- ══════════ LAPORAN ══════════ -->
-<div class="page" id="pg-laporan">
-  <div class="topbar">
-    <div class="topbar-row">
-      <div><h1>Laporan Bulanan</h1><div class="sub" id="lap-periode">—</div></div>
-    </div>
-  </div>
-  <div class="page-body">
-    <div class="card" style="margin-bottom:12px;">
-      <div class="card-header"><span class="card-title">Filter Periode</span></div>
-      <div class="card-body">
-        <div class="form-row" style="margin-bottom:12px;">
-          <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Bulan</label>
-            <select class="form-input" id="lap-filter-bulan">
-              <option value="Januari">Januari</option>
-              <option value="Februari">Februari</option>
-              <option value="Maret">Maret</option>
-              <option value="April">April</option>
-              <option value="Mei">Mei</option>
-              <option value="Juni">Juni</option>
-              <option value="Juli">Juli</option>
-              <option value="Agustus">Agustus</option>
-              <option value="September">September</option>
-              <option value="Oktober">Oktober</option>
-              <option value="November">November</option>
-              <option value="Desember">Desember</option>
-            </select>
-          </div>
-          <div class="form-group" style="margin-bottom:0;">
-            <label class="form-label">Tahun</label>
-            <select class="form-input" id="lap-filter-tahun"></select>
-          </div>
-        </div>
-        <button class="btn btn-primary" id="btn-filter-laporan">
-          <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          Tampilkan Laporan
-        </button>
-      </div>
-    </div>
-    <div class="stat-grid">
-      <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="lap-total">—</div></div>
-      <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
-      <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
-      <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
-    </div>
-    <div class="card">
-      <div class="card-header"><span class="card-title">Piutang Tersisa</span><span class="badge badge-red" id="lap-piutang">—</span></div>
-      <div class="card-body" id="lap-list">
-        <div class="loading"><div class="spinner"></div> Memuat…</div>
-      </div>
-    </div>
-  </div>
-  <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item" data-page="pelanggan">Cari</button>
-    <button class="nav-item" data-page="meteran">Catat</button>
-    <button class="nav-item active" data-page="laporan">Laporan</button>
-  </nav>
-</div>
-
-<!-- ══════════ DETAIL PELANGGAN ══════════ -->
-<div class="page" id="pg-detail">
-  <div class="topbar">
-    <button class="back-btn" id="detail-back">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      Kembali
-    </button>
-    <div><h1 id="detail-nama">—</h1><div class="sub" id="detail-norumah">—</div></div>
-  </div>
-  <div class="page-body">
-    <div class="card">
-      <div class="card-header"><span class="card-title">Info Pelanggan</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Alamat</span><span class="val" id="detail-alamat">—</span></div>
-        <div class="info-row"><span class="lbl">No Telepon</span><span class="val mono" id="detail-telp">—</span></div>
-        <div class="info-row"><span class="lbl">ID Pelanggan</span><span class="val mono" id="detail-id">—</span></div>
-      </div>
-    </div>
-    <div class="card" id="detail-tagihan-card">
-      <div class="card-header"><span class="card-title">Tagihan Bulan Ini</span><span id="detail-badge" class="badge">—</span></div>
-      <div class="card-body">
-        <div class="info-row"><span class="lbl">Pemakaian</span><span class="val big" id="detail-pakai">—</span></div>
-        <div class="info-row"><span class="lbl">Tagihan Air</span><span class="val" id="detail-tagihan">—</span></div>
-        <div class="info-row"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-        <div class="info-row"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
-      </div>
-    </div>
-    <div id="detail-actions"></div>
-  </div>
-</div>
-
-<!-- ══════════ MODAL BAYAR ══════════ -->
+<!-- MODAL BAYAR -->
 <div class="overlay" id="modal-bayar">
   <div class="sheet">
     <div class="sheet-handle"></div>
