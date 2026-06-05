@@ -2,22 +2,27 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <meta name="mobile-web-app-capable" content="yes"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
 <title>SiPAM — Sistem Pembayaran Air Minum</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="css/style.css"/>
+<link rel="stylesheet" href="style.css"/>
 </head>
 <body>
 <div id="app">
 
-<!-- ══════════ LOGIN ══════════ -->
-<div class="page active" id="pg-login">
+<!-- ══════════════════════════════════════════
+     LOGIN
+══════════════════════════════════════════ -->
+<div id="pg-login">
   <div class="login-logo">
     <div class="drop">
-      <svg width="32" height="32" fill="none" viewBox="0 0 24 24"><path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/></svg>
+      <svg width="32" height="32" fill="none" viewBox="0 0 24 24">
+        <path d="M12 2C12 2 5 10.5 5 15a7 7 0 0014 0C19 10.5 12 2 12 2z" fill="white" opacity=".9"/>
+      </svg>
     </div>
     <h1>SiPAM</h1>
     <p>Sistem Pembayaran Air Minum</p>
@@ -27,20 +32,27 @@
     <div class="login-err" id="login-err"></div>
     <div class="form-group">
       <label class="form-label">Username</label>
-      <input class="form-input" id="inp-username" type="text" placeholder="Masukkan username" autocomplete="username"/>
+      <input class="form-input" id="inp-username" type="text"
+        placeholder="Masukkan username" autocomplete="username"/>
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" id="inp-password" type="password" placeholder="Masukkan password" autocomplete="current-password"/>
+      <input class="form-input" id="inp-password" type="password"
+        placeholder="Masukkan password" autocomplete="current-password"/>
     </div>
-    <button class="btn btn-primary" id="btn-login">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <button class="btn btn-primary" id="btn-login" onclick="doLogin()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
       Masuk
     </button>
   </div>
 </div>
 
-<!-- ══════════ DASHBOARD ══════════ -->
+<!-- ══════════════════════════════════════════
+     DASHBOARD
+══════════════════════════════════════════ -->
 <div class="page" id="pg-dashboard">
   <div class="topbar">
     <div class="topbar-row">
@@ -48,11 +60,15 @@
         <div class="sub" id="dash-greeting">Selamat datang</div>
         <h1 id="dash-nama">—</h1>
       </div>
-      <button class="topbar-icon" id="btn-logout" title="Keluar">
-        <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      <button class="topbar-icon" onclick="doLogout()" title="Keluar">
+        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </button>
     </div>
   </div>
+
   <div class="page-body">
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="s-total">—</div></div>
@@ -60,6 +76,7 @@
       <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="s-belum">—</div></div>
       <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm blue" id="s-nominal">—</div></div>
     </div>
+
     <div class="card">
       <div class="card-body" style="padding:14px 16px;">
         <div class="stat-label" style="margin-bottom:6px;">Progress pembayaran bulan ini</div>
@@ -67,6 +84,7 @@
         <div style="text-align:right;font-size:11px;color:var(--c-text3);margin-top:4px;" id="s-pct">0%</div>
       </div>
     </div>
+
     <div class="card">
       <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
       <div class="card-body" id="dash-belum-list">
@@ -74,27 +92,30 @@
       </div>
     </div>
   </div>
+
   <nav class="bottom-nav">
-    <button class="nav-item active" data-page="dashboard">
+    <button class="nav-item active" onclick="goPage('dashboard')">
       <svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Dashboard
     </button>
-    <button class="nav-item" data-page="pelanggan">
+    <button class="nav-item" onclick="goPage('pelanggan')">
       <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Cari
     </button>
-    <button class="nav-item" data-page="meteran">
+    <button class="nav-item" onclick="goPage('meteran')">
       <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Catat
     </button>
-    <button class="nav-item" data-page="laporan">
+    <button class="nav-item" onclick="goPage('laporan')">
       <svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       Laporan
     </button>
   </nav>
 </div>
 
-<!-- ══════════ CARI PELANGGAN ══════════ -->
+<!-- ══════════════════════════════════════════
+     CARI PELANGGAN
+══════════════════════════════════════════ -->
 <div class="page" id="pg-pelanggan">
   <div class="topbar">
     <div class="topbar-row">
@@ -104,19 +125,22 @@
   <div class="page-body">
     <div class="search-wrap">
       <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-      <input class="search-input" id="search-input" type="search" placeholder="Cari nama / no. rumah…"/>
+      <input class="search-input" id="search-input" type="search"
+        placeholder="Cari nama / no. rumah…" oninput="doSearch(this.value)" autocomplete="off"/>
     </div>
     <div id="search-results"></div>
   </div>
   <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item active" data-page="pelanggan">Cari</button>
-    <button class="nav-item" data-page="meteran">Catat</button>
-    <button class="nav-item" data-page="laporan">Laporan</button>
+    <button class="nav-item" onclick="goPage('dashboard')"><svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Dashboard</button>
+    <button class="nav-item active" onclick="goPage('pelanggan')"><svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cari</button>
+    <button class="nav-item" onclick="goPage('meteran')"><svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Catat</button>
+    <button class="nav-item" onclick="goPage('laporan')"><svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Laporan</button>
   </nav>
 </div>
 
-<!-- ══════════ CATAT METERAN ══════════ -->
+<!-- ══════════════════════════════════════════
+     CATAT METERAN
+══════════════════════════════════════════ -->
 <div class="page" id="pg-meteran">
   <div class="topbar">
     <div class="topbar-row">
@@ -124,74 +148,104 @@
     </div>
   </div>
   <div class="page-body">
+
+    <!-- Cari pelanggan -->
     <div class="card">
       <div class="card-header"><span class="card-title">Cari Pelanggan</span></div>
       <div class="card-body">
         <div class="search-wrap" style="margin-bottom:0">
           <svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-          <input class="search-input" id="met-search" type="search" placeholder="Ketik nama / no. rumah…"/>
+          <input class="search-input" id="met-search" type="search"
+            placeholder="Ketik nama / no. rumah…" oninput="doMetSearch(this.value)" autocomplete="off"/>
         </div>
         <div id="met-search-results" style="margin-top:10px;"></div>
       </div>
     </div>
+
+    <!-- Form meteran (muncul setelah pelanggan dipilih) -->
     <div class="card" id="met-form-card" style="display:none;">
       <div class="card-header"><span class="card-title">Data Meteran</span></div>
       <div class="card-body">
+
         <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="met-nama-lbl">—</span></div>
         <div class="info-row" style="margin-bottom:14px;"><span class="lbl">No Rumah</span><span class="val mono" id="met-no-lbl">—</span></div>
-        <div id="met-last-info" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-green-l);border:1.5px solid var(--c-green);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-green)"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div>
-              <div style="font-size:11px;color:var(--c-green);font-weight:600;">Meter terakhir tercatat</div>
-              <div style="font-size:13px;color:var(--c-text);margin-top:1px;">
-                <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
-              </div>
+
+        <!-- Alert: sudah tercatat bulan ini -->
+        <div class="alert alert-red hidden" id="met-already-recorded">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M18.364 18.364A9 9 0 115.636 5.636a9 9 0 0112.728 12.728z" stroke="currentColor" stroke-width="2"/><path d="M12 8v4m0 4h.01" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>
+            <strong>Data sudah tercatat!</strong><br>
+            Pelanggan ini sudah dicatat meterannya pada <strong id="met-recorded-bulan">bulan ini</strong>. Tidak bisa diinput ulang.
+          </div>
+        </div>
+
+        <!-- Info: meter terakhir ditemukan -->
+        <div class="alert alert-green hidden" id="met-last-info">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4M22 12A10 10 0 112 12a10 10 0 0120 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>
+            <div style="font-size:11px;font-weight:600;">Meter terakhir tercatat</div>
+            <div style="margin-top:2px;font-size:13px;color:var(--c-text);">
+              <span id="met-last-bulan">—</span> → <strong id="met-last-nilai">—</strong> m³
             </div>
           </div>
         </div>
-        <div id="met-no-history" style="display:none;margin-bottom:12px;">
-          <div style="background:var(--c-amber-l);border:1.5px solid var(--c-amber);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:10px;">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24" style="flex-shrink:0;color:var(--c-amber)"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-            <div style="font-size:12px;color:var(--c-amber);">Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
-          </div>
+
+        <!-- Info: belum ada riwayat -->
+        <div class="alert alert-amber hidden" id="met-no-history">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div>Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
         </div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Meter Bulan Lalu</label>
-            <input class="form-input" id="met-lalu" type="number" placeholder="0"/>
+            <input class="form-input" id="met-lalu" type="number" inputmode="numeric"
+              placeholder="0" oninput="hitungPemakaian()"/>
             <div class="form-hint" id="met-lalu-hint">m³</div>
           </div>
           <div class="form-group">
             <label class="form-label">Meter Berjalan</label>
-            <input class="form-input" id="met-jalan" type="number" placeholder="0"/>
+            <input class="form-input" id="met-jalan" type="number" inputmode="numeric"
+              placeholder="0" oninput="hitungPemakaian()"/>
             <div class="form-hint">m³ — baca dari alat</div>
           </div>
         </div>
+
+        <!-- Kalkulasi otomatis -->
         <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
           <div class="card-body" style="padding:12px 14px;">
             <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan</span><span class="val" id="met-tagihan">Rp 0</span></div>
+            <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan Air</span><span class="val" id="met-tagihan">Rp 0</span></div>
             <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-            <div class="info-row" style="padding:6px 0;border-bottom:none;"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="met-total">Rp 5.000</span></div>
+            <div class="info-row" style="padding:6px 0;border-bottom:none;">
+              <span class="lbl" style="font-weight:700;">Total Bayar</span>
+              <span class="val total" id="met-total">Rp 5.000</span>
+            </div>
           </div>
         </div>
-        <button class="btn btn-primary" id="btn-simpan-meteran">
-          <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/><polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/></svg>
+
+        <button class="btn btn-primary" id="met-simpan-btn" onclick="simpanMeteran()">
+          <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/>
+            <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/>
+          </svg>
           Simpan Data Meteran
         </button>
       </div>
     </div>
+
   </div>
   <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item" data-page="pelanggan">Cari</button>
-    <button class="nav-item active" data-page="meteran">Catat</button>
-    <button class="nav-item" data-page="laporan">Laporan</button>
+    <button class="nav-item" onclick="goPage('dashboard')"><svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Dashboard</button>
+    <button class="nav-item" onclick="goPage('pelanggan')"><svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cari</button>
+    <button class="nav-item active" onclick="goPage('meteran')"><svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Catat</button>
+    <button class="nav-item" onclick="goPage('laporan')"><svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Laporan</button>
   </nav>
 </div>
 
-<!-- ══════════ LAPORAN ══════════ -->
+<!-- ══════════════════════════════════════════
+     LAPORAN
+══════════════════════════════════════════ -->
 <div class="page" id="pg-laporan">
   <div class="topbar">
     <div class="topbar-row">
@@ -199,6 +253,8 @@
     </div>
   </div>
   <div class="page-body">
+
+    <!-- Filter periode -->
     <div class="card" style="margin-bottom:12px;">
       <div class="card-header"><span class="card-title">Filter Periode</span></div>
       <div class="card-body">
@@ -206,18 +262,10 @@
           <div class="form-group" style="margin-bottom:0;">
             <label class="form-label">Bulan</label>
             <select class="form-input" id="lap-filter-bulan">
-              <option value="Januari">Januari</option>
-              <option value="Februari">Februari</option>
-              <option value="Maret">Maret</option>
-              <option value="April">April</option>
-              <option value="Mei">Mei</option>
-              <option value="Juni">Juni</option>
-              <option value="Juli">Juli</option>
-              <option value="Agustus">Agustus</option>
-              <option value="September">September</option>
-              <option value="Oktober">Oktober</option>
-              <option value="November">November</option>
-              <option value="Desember">Desember</option>
+              <option>Januari</option><option>Februari</option><option>Maret</option>
+              <option>April</option><option>Mei</option><option>Juni</option>
+              <option>Juli</option><option>Agustus</option><option>September</option>
+              <option>Oktober</option><option>November</option><option>Desember</option>
             </select>
           </div>
           <div class="form-group" style="margin-bottom:0;">
@@ -225,38 +273,48 @@
             <select class="form-input" id="lap-filter-tahun"></select>
           </div>
         </div>
-        <button class="btn btn-primary" id="btn-filter-laporan">
+        <button class="btn btn-primary" onclick="terapkanFilterLaporan()">
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Tampilkan Laporan
         </button>
       </div>
     </div>
+
     <div class="stat-grid">
       <div class="stat-box"><div class="stat-label">Total Pelanggan</div><div class="stat-val blue" id="lap-total">—</div></div>
       <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
       <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
       <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
     </div>
+
     <div class="card">
-      <div class="card-header"><span class="card-title">Piutang Tersisa</span><span class="badge badge-red" id="lap-piutang">—</span></div>
+      <div class="card-header">
+        <span class="card-title">Piutang Tersisa</span>
+        <span class="badge badge-red" id="lap-piutang">—</span>
+      </div>
       <div class="card-body" id="lap-list">
         <div class="loading"><div class="spinner"></div> Memuat…</div>
       </div>
     </div>
+
   </div>
   <nav class="bottom-nav">
-    <button class="nav-item" data-page="dashboard">Dashboard</button>
-    <button class="nav-item" data-page="pelanggan">Cari</button>
-    <button class="nav-item" data-page="meteran">Catat</button>
-    <button class="nav-item active" data-page="laporan">Laporan</button>
+    <button class="nav-item" onclick="goPage('dashboard')"><svg fill="none" viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="9 22 9 12 15 12 15 22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Dashboard</button>
+    <button class="nav-item" onclick="goPage('pelanggan')"><svg fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Cari</button>
+    <button class="nav-item" onclick="goPage('meteran')"><svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/><path d="M8 12h8M12 8v8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Catat</button>
+    <button class="nav-item active" onclick="goPage('laporan')"><svg fill="none" viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>Laporan</button>
   </nav>
 </div>
 
-<!-- ══════════ DETAIL PELANGGAN ══════════ -->
+<!-- ══════════════════════════════════════════
+     DETAIL PELANGGAN
+══════════════════════════════════════════ -->
 <div class="page" id="pg-detail">
   <div class="topbar">
-    <button class="back-btn" id="detail-back">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    <button class="back-btn" onclick="goBack()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M19 12H5M12 5l-7 7 7 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
       Kembali
     </button>
     <div><h1 id="detail-nama">—</h1><div class="sub" id="detail-norumah">—</div></div>
@@ -270,22 +328,27 @@
         <div class="info-row"><span class="lbl">ID Pelanggan</span><span class="val mono" id="detail-id">—</span></div>
       </div>
     </div>
-    <div class="card" id="detail-tagihan-card">
-      <div class="card-header"><span class="card-title">Tagihan Bulan Ini</span><span id="detail-badge" class="badge">—</span></div>
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Tagihan Bulan Ini</span>
+        <span id="detail-badge" class="badge">—</span>
+      </div>
       <div class="card-body">
         <div class="info-row"><span class="lbl">Pemakaian</span><span class="val big" id="detail-pakai">—</span></div>
         <div class="info-row"><span class="lbl">Tagihan Air</span><span class="val" id="detail-tagihan">—</span></div>
         <div class="info-row"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
-        <div class="info-row"><span class="lbl" style="font-weight:700">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
+        <div class="info-row"><span class="lbl" style="font-weight:700;">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
       </div>
     </div>
     <div id="detail-actions"></div>
   </div>
 </div>
 
-<!-- ══════════ MODAL BAYAR ══════════ -->
-<div class="overlay" id="modal-bayar">
-  <div class="sheet">
+<!-- ══════════════════════════════════════════
+     MODAL KONFIRMASI BAYAR
+══════════════════════════════════════════ -->
+<div class="overlay" id="modal-bayar" onclick="closeModal()">
+  <div class="sheet" onclick="event.stopPropagation()">
     <div class="sheet-handle"></div>
     <h3>Konfirmasi Pembayaran</h3>
     <div class="info-row"><span class="lbl">Pelanggan</span><span class="val" id="modal-nama">—</span></div>
@@ -293,33 +356,32 @@
     <div class="divider"></div>
     <div class="section-label">Metode Pembayaran</div>
     <div class="metode-grid">
-      <button class="metode-btn active" data-metode="Tunai">
+      <button class="metode-btn active" id="met-tunai" onclick="pilihMetode('Tunai')">
         <svg fill="none" viewBox="0 0 24 24"><rect x="2" y="6" width="20" height="12" rx="2" stroke="currentColor" stroke-width="2"/><path d="M2 10h20" stroke="currentColor" stroke-width="2"/></svg>
         Tunai
       </button>
-      <button class="metode-btn" data-metode="Transfer">
+      <button class="metode-btn" id="met-transfer" onclick="pilihMetode('Transfer')">
         <svg fill="none" viewBox="0 0 24 24"><path d="M8 6l4-4 4 4M16 18l-4 4-4-4M12 2v20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         Transfer
       </button>
-      <button class="metode-btn" data-metode="QRIS">
+      <button class="metode-btn" id="met-qris" onclick="pilihMetode('QRIS')">
         <svg fill="none" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/><path d="M14 14h2M17 14h3M14 17v3M17 17h3v3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
         QRIS
       </button>
     </div>
-    <button class="btn btn-green" id="btn-konfirmasi-bayar">
-      <svg width="18" height="18" fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
+    <button class="btn btn-green" id="btn-konfirmasi" onclick="konfirmasiBayar()">
+      <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
       Tandai Lunas
     </button>
-    <button class="btn btn-outline" id="btn-close-modal" style="margin-top:8px;">Batal</button>
+    <button class="btn btn-outline" style="margin-top:8px;" onclick="closeModal()">Batal</button>
   </div>
 </div>
 
-<!-- Toast -->
+<!-- Toast notification -->
 <div class="toast" id="toast"></div>
 
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/api.js"></script>
-<script src="js/app.js"></script>
+<script src="app.js"></script>
 </body>
 </html>
