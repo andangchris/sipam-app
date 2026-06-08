@@ -43,22 +43,31 @@ html, body {
 }
 
 /* ── APP SHELL ──────────────────────────────── */
-#app { max-width: 480px; min-height: 100dvh; margin: 0 auto; position: relative; }
+#app {
+  max-width: 480px;
+  height: 100dvh;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden; /* clip inactive pages */
+}
 
 /* ── PAGES ──────────────────────────────────── */
-/* ALL pages (including login) hidden by default */
+/* Each page fills the viewport independently — no scroll bleed between pages */
 .page {
   display: none;
   flex-direction: column;
-  min-height: 100dvh;
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: var(--c-bg);
 }
-/* Any page that becomes active is shown */
 .page.active {
   display: flex;
   animation: fadeUp .22s ease;
 }
 @keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
@@ -115,13 +124,17 @@ html, body {
 
 /* ── BOTTOM NAV ─────────────────────────────── */
 .bottom-nav {
-  position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
-  width: 100%; max-width: 480px;
+  position: sticky;
+  bottom: 0;
+  width: 100%;
   background: var(--c-surface);
   border-top: 1px solid var(--c-border);
-  display: flex; height: var(--nav-h);
+  display: flex;
+  height: var(--nav-h);
+  flex-shrink: 0;
   z-index: 100;
   box-shadow: 0 -4px 20px rgba(0,0,0,.06);
+  margin-top: auto;
 }
 .nav-item {
   flex: 1; display: flex; flex-direction: column;
@@ -137,10 +150,8 @@ html, body {
 /* ── PAGE BODY ──────────────────────────────── */
 .page-body {
   flex: 1;
-  overflow-y: auto;
   padding: 16px 16px calc(var(--nav-h) + 16px);
-  /* Prevent content from hiding under bottom-nav on iOS */
-  -webkit-overflow-scrolling: touch;
+  /* Scrolling handled by .page itself */
 }
 
 /* ── CARDS ──────────────────────────────────── */
