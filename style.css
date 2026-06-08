@@ -46,12 +46,25 @@ html, body {
 #app { max-width: 480px; min-height: 100dvh; margin: 0 auto; position: relative; }
 
 /* ── PAGES ──────────────────────────────────── */
-/* Login is flex by default since it's the entry point */
-#pg-login {
-  min-height: 100dvh;
-  background: var(--c-primary);
-  display: flex;
+/* ALL pages (including login) hidden by default */
+.page {
+  display: none;
   flex-direction: column;
+  min-height: 100dvh;
+}
+/* Any page that becomes active is shown */
+.page.active {
+  display: flex;
+  animation: fadeUp .22s ease;
+}
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Login-specific layout — only matters when .active is present */
+#pg-login.active {
+  background: var(--c-primary);
   align-items: center;
   justify-content: center;
   padding: 32px 24px;
@@ -66,21 +79,6 @@ html, body {
     radial-gradient(ellipse at 20% 80%, rgba(0,180,216,.3) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 10%, rgba(255,255,255,.08) 0%, transparent 50%);
   pointer-events: none;
-}
-
-/* All other pages hidden by default, shown via JS */
-.page {
-  display: none;
-  flex-direction: column;
-  min-height: 100dvh;
-}
-.page.active {
-  display: flex;
-  animation: fadeUp .22s ease;
-}
-@keyframes fadeUp {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: none; }
 }
 
 /* ── TOP BAR ────────────────────────────────── */

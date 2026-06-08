@@ -5,7 +5,7 @@
 
 // ── CONFIG ───────────────────────────────────────────────────────────────
 // Ganti dengan URL Google Apps Script Anda setelah deploy
-const API_URL = "https://script.google.com/macros/s/AKfycbzTE5Vs2foRmYnue3A93Rj8bYzAWkZKKi4O0L13zve0xF3ihD-cn1hdCg4xpYi-vV6G/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbyjl2uTkcIePpAEdm2I8wSCW58SQPaym1uckjjCtUg/dev";
 
 const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni",
                     "Juli","Agustus","September","Oktober","November","Desember"];
@@ -240,18 +240,20 @@ function renderDashboardList() {
     return;
   }
 
-  const { items, totalPages, start, end } = paginate(data, page);
+  const pg = paginate(data, page);
+  pgState.dashboard.page = pg.curPage; // sync corrected page
 
-  el.innerHTML = items.map(t => `
-    <div class="pel-item" onclick="openDetailFromDash('${esc(t.id_pelanggan)}','${esc(t.id_transaksi)}')">
-      <div class="avatar av-a">${initials(t.nama)}</div>
-      <div class="pel-info">
-        <div class="pel-name">${escHtml(t.nama)}</div>
-        <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
-      </div>
-      <span class="badge badge-red">Belum</span>
-    </div>`).join("")
-  + renderPagination("dashboard", page, totalPages, data.length, start, end);
+  el.innerHTML =
+    pg.items.map(t => `
+      <div class="pel-item" onclick="openDetailFromDash('${esc(t.id_pelanggan)}')">
+        <div class="avatar av-a">${initials(t.nama)}</div>
+        <div class="pel-info">
+          <div class="pel-name">${escHtml(t.nama)}</div>
+          <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
+        </div>
+        <span class="badge badge-red">Belum</span>
+      </div>`).join("")
+    + renderPagination("dashboard", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -287,10 +289,11 @@ function renderSearchResults(list) {
   if (!list.length) { el.innerHTML = ""; return; }
 
   pgState.cari.data = list;
-  const { items, totalPages, start, end } = paginate(list, pgState.cari.page);
+  const pg = paginate(list, pgState.cari.page);
+  pgState.cari.page = pg.curPage;
 
   el.innerHTML = `<div class="card"><div class="card-body" style="padding:0 16px;">
-    ${items.map((p, i) => `
+    ${pg.items.map((p, i) => `
       <div class="pel-item" onclick="openDetail('${esc(p.id_pelanggan)}','pelanggan')">
         <div class="avatar ${["av-b","av-g","av-a"][i % 3]}">${initials(p.nama)}</div>
         <div class="pel-info">
@@ -301,7 +304,7 @@ function renderSearchResults(list) {
           <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
       </div>`).join("")}
-    ${renderPagination("cari", pgState.cari.page, totalPages, list.length, start, end)}
+    ${renderPagination("cari", pg.curPage, pg.totalPages, list.length, pg.start, pg.end)}
   </div></div>`;
 }
 
@@ -392,12 +395,17 @@ let metSearchTimer;
 
 function resetMeteranForm() {
   selPelMet = null;
-  document.getElementById("met-search").value          = "";
+  document.getElementById("met-search").value             = "";
   document.getElementById("met-search-results").innerHTML = "";
   document.getElementById("met-form-card").style.display  = "none";
   document.getElementById("met-already-recorded").classList.add("hidden");
   document.getElementById("met-last-info").classList.add("hidden");
   document.getElementById("met-no-history").classList.add("hidden");
+  document.getElementById("met-lalu").removeAttribute("readonly");
+  document.getElementById("met-jalan").removeAttribute("readonly");
+  document.getElementById("met-lalu").value  = "";
+  document.getElementById("met-jalan").value = "";
+  document.getElementById("met-simpan-btn").disabled = false;
 }
 
 function doMetSearch(val) {
@@ -457,35 +465,63 @@ async function pilihPelMet(id) {
   document.getElementById("met-search-results").innerHTML = "";
   document.getElementById("met-search").value = selPelMet.nama;
 
-  // ── Cek 1: apakah sudah dicatat bulan ini? ──────────────────
+  // ── Ambil meter terakhir (selalu diperlukan) ────────────────
+  let lastMeter = null;
+  try {
+    const histRes = await api({ action: "getLastMeter", token: session?.token, id_pelanggan: id });
+    if (histRes.status === "ok" && histRes.meter_berjalan != null) {
+      lastMeter = histRes;
+    }
+  } catch (e) { console.error("LastMeter:", e); }
+
+  // ── Cek duplikat: sudah dicatat bulan ini? ───────────────────
   try {
     const lapRes = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
     if (lapRes.status === "ok") {
       const existing = lapRes.detail?.find(t => t.id_pelanggan === id);
       if (existing) {
-        // Sudah tercatat bulan ini — blokir input
+        // Sudah tercatat — tampilkan data existing, semua input disabled
         document.getElementById("met-already-recorded").classList.remove("hidden");
         document.getElementById("met-simpan-btn").disabled = true;
-        return; // Tidak perlu fetch last meter
+
+        // Tampilkan meter bulan lalu (dari lastMeter) dan meter berjalan (dari existing)
+        if (lastMeter) {
+          document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
+          document.getElementById("met-lalu-hint").textContent =
+            `m³ — dari ${lastMeter.bulan} ${lastMeter.tahun}`;
+          document.getElementById("met-last-bulan").textContent =
+            `${lastMeter.bulan} ${lastMeter.tahun}`;
+          document.getElementById("met-last-nilai").textContent = lastMeter.meter_berjalan;
+          document.getElementById("met-last-info").classList.remove("hidden");
+        }
+        // Tampilkan meter berjalan bulan ini (hitung balik dari pemakaian + lalu)
+        const meterBerjalan = lastMeter
+          ? lastMeter.meter_berjalan + (existing.pemakaian || 0)
+          : (existing.pemakaian || 0);
+        document.getElementById("met-jalan").value = meterBerjalan;
+        // Disable kedua field
+        document.getElementById("met-lalu").setAttribute("readonly", true);
+        document.getElementById("met-jalan").setAttribute("readonly", true);
+        hitungPemakaian();
+        return;
       }
     }
   } catch (e) { console.error("Cek existing:", e); }
 
-  // ── Cek 2: ambil meter berjalan terakhir untuk auto-fill ─────
-  try {
-    const histRes = await api({ action: "getLastMeter", token: session?.token, id_pelanggan: id });
-    if (histRes.status === "ok" && histRes.meter_berjalan != null) {
-      document.getElementById("met-lalu").value           = histRes.meter_berjalan;
-      document.getElementById("met-lalu").setAttribute("readonly", true);
-      document.getElementById("met-lalu-hint").textContent = `m³ — otomatis dari ${histRes.bulan} ${histRes.tahun}`;
-      document.getElementById("met-last-bulan").textContent = `${histRes.bulan} ${histRes.tahun}`;
-      document.getElementById("met-last-nilai").textContent = histRes.meter_berjalan;
-      document.getElementById("met-last-info").classList.remove("hidden");
-      hitungPemakaian();
-    } else {
-      document.getElementById("met-no-history").classList.remove("hidden");
-    }
-  } catch (e) { console.error("LastMeter:", e); }
+  // ── Belum ada data bulan ini: auto-fill meter bulan lalu ────
+  if (lastMeter) {
+    document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
+    document.getElementById("met-lalu").setAttribute("readonly", true);
+    document.getElementById("met-lalu-hint").textContent =
+      `m³ — otomatis dari ${lastMeter.bulan} ${lastMeter.tahun}`;
+    document.getElementById("met-last-bulan").textContent =
+      `${lastMeter.bulan} ${lastMeter.tahun}`;
+    document.getElementById("met-last-nilai").textContent = lastMeter.meter_berjalan;
+    document.getElementById("met-last-info").classList.remove("hidden");
+    hitungPemakaian();
+  } else {
+    document.getElementById("met-no-history").classList.remove("hidden");
+  }
 }
 
 function hitungPemakaian() {
@@ -612,8 +648,10 @@ function renderLaporanList() {
     return;
   }
 
-  const { items, totalPages, start, end } = paginate(data, page);
-  el.innerHTML = items.map(t => `
+  const pg = paginate(data, page);
+  pgState.laporan.page = pg.curPage;
+
+  el.innerHTML = pg.items.map(t => `
     <div class="pel-item" onclick="openDetail('${esc(t.id_pelanggan)}','laporan')">
       <div class="avatar av-a">${initials(t.nama)}</div>
       <div class="pel-info">
@@ -622,7 +660,7 @@ function renderLaporanList() {
       </div>
       <span class="badge badge-red">Belum</span>
     </div>`).join("")
-  + renderPagination("laporan", page, totalPages, data.length, start, end);
+  + renderPagination("laporan", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
 }
 
 // ════════════════════════════════════════════════════════════════════════
