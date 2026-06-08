@@ -144,9 +144,10 @@ function doLogout() {
 function showPage(id) {
   document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
   const el = document.getElementById(id);
-  if (el) el.classList.add("active");
-  // Scroll to top of new page
-  window.scrollTo(0, 0);
+  if (el) {
+    el.classList.add("active");
+    el.scrollTop = 0; // scroll the page element itself, not window
+  }
 }
 
 function showApp() {
