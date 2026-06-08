@@ -25,6 +25,7 @@ const PAGE_SIZE = 3;
 const pgState = {
   dashboard: { page: 1, data: [] },
   cari:      { page: 1, data: [] },
+  catat:     { page: 1, data: [] },
   laporan:   { page: 1, data: [] },
 };
 
@@ -203,17 +204,27 @@ async function loadDashboard() {
     `<div class="loading"><div class="spinner"></div> Memuat data…</div>`;
 
   try {
-    const res = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
+    // Jalankan prefetch pelanggan dan laporan secara paralel
+    const [_, res] = await Promise.all([
+      prefetchPelanggan(),
+      api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI })
+    ]);
     if (res.status !== "ok") throw new Error(res.message);
 
     const { laporan, detail } = res;
-    document.getElementById("s-total").textContent   = laporan.total_pelanggan;
+
+    // Total pelanggan: ambil dari cache sheet pelanggan (50 orang),
+    // bukan dari laporan bulan ini (hanya yang sudah punya transaksi)
+    const totalPelanggan = allPelanggan.length || laporan.total_pelanggan;
+
+    document.getElementById("s-total").textContent   = totalPelanggan;
     document.getElementById("s-lunas").textContent   = laporan.sudah_bayar;
     document.getElementById("s-belum").textContent   = laporan.belum_bayar;
     document.getElementById("s-nominal").textContent = rp(laporan.total_terkumpul);
 
-    const pct = laporan.total_pelanggan
-      ? Math.round(laporan.sudah_bayar / laporan.total_pelanggan * 100) : 0;
+    // Progress: dari total pelanggan aktif di sheet
+    const pct = totalPelanggan
+      ? Math.round(laporan.sudah_bayar / totalPelanggan * 100) : 0;
     document.getElementById("s-progress").style.width = pct + "%";
     document.getElementById("s-pct").textContent      = pct + "% lunas";
 
@@ -313,6 +324,7 @@ function changePage(section, dir) {
   pgState[section].page += dir;
   if (section === "dashboard") renderDashboardList();
   if (section === "cari")      renderSearchResults(pgState.cari.data);
+  if (section === "catat")     renderMetSearchResults(pgState.catat.data);
   if (section === "laporan")   renderLaporanList();
 }
 
@@ -396,6 +408,8 @@ let metSearchTimer;
 
 function resetMeteranForm() {
   selPelMet = null;
+  pgState.catat.data = [];
+  pgState.catat.page = 1;
   document.getElementById("met-search").value             = "";
   document.getElementById("met-search-results").innerHTML = "";
   document.getElementById("met-form-card").style.display  = "none";
@@ -413,6 +427,7 @@ function doMetSearch(val) {
   clearTimeout(metSearchTimer);
   if (!val.trim()) {
     document.getElementById("met-search-results").innerHTML = "";
+    pgState.catat.data = [];
     return;
   }
   metSearchTimer = setTimeout(async () => {
@@ -427,22 +442,35 @@ function doMetSearch(val) {
         const res = await api({ action: "searchPelanggan", token: session?.token, keyword: val });
         results = res.status === "ok" ? res.data : [];
       }
-      const el = document.getElementById("met-search-results");
-      el.innerHTML = results.length
-        ? results.map(p => `
-          <div class="pel-item" style="padding:10px 0;" onclick="pilihPelMet('${esc(p.id_pelanggan)}')">
-            <div class="avatar av-b">${initials(p.nama)}</div>
-            <div class="pel-info">
-              <div class="pel-name">${escHtml(p.nama)}</div>
-              <div class="pel-sub">${escHtml(p.no_rumah)}</div>
-            </div>
-            <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
-              <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </div>`).join("")
-        : `<p style="color:var(--c-text3);font-size:13px;padding:8px 0;">Tidak ditemukan.</p>`;
+      pgState.catat.data  = results;
+      pgState.catat.page  = 1;
+      renderMetSearchResults(results);
     } catch (e) { console.error("MetSearch:", e); }
   }, 300);
+}
+
+function renderMetSearchResults(list) {
+  const el = document.getElementById("met-search-results");
+  if (!list.length) {
+    el.innerHTML = `<p style="color:var(--c-text3);font-size:13px;padding:8px 0;">Tidak ditemukan.</p>`;
+    return;
+  }
+  const pg = paginate(list, pgState.catat.page);
+  pgState.catat.page = pg.curPage;
+
+  el.innerHTML =
+    pg.items.map(p => `
+      <div class="pel-item" style="padding:10px 0;" onclick="pilihPelMet('${esc(p.id_pelanggan)}')">
+        <div class="avatar av-b">${initials(p.nama)}</div>
+        <div class="pel-info">
+          <div class="pel-name">${escHtml(p.nama)}</div>
+          <div class="pel-sub">${escHtml(p.no_rumah)}</div>
+        </div>
+        <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+          <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>`).join("")
+    + renderPagination("catat", pg.curPage, pg.totalPages, list.length, pg.start, pg.end);
 }
 
 async function pilihPelMet(id) {
