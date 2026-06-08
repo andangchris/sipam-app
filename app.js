@@ -5,7 +5,7 @@
 
 // ── CONFIG ───────────────────────────────────────────────────────────────
 // Ganti dengan URL Google Apps Script Anda setelah deploy
-const API_URL = "https://script.google.com/macros/s/AKfycbyjl2uTkcIePpAEdm2I8wSCW58SQPaym1uckjjCtUg/dev";
+const API_URL = "https://script.google.com/macros/s/AKfycbz5cWNASCTXOo5ZvNEQCKl8m3bBRd8iMx7Xl25uxD_ajGwEgDLSCt0LIUqOY_Bpz3fk/exec";
 
 const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni",
                     "Juli","Agustus","September","Oktober","November","Desember"];
