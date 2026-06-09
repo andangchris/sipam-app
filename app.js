@@ -1,31 +1,68 @@
 /* ═══════════════════════════════════════════════
-   SiPAM — app.js
-   Sistem Pembayaran Air Minum
+   SiKAS — app.js
+   Sistem Iuran Kas & RMD
 ═══════════════════════════════════════════════ */
 
 // ── CONFIG ───────────────────────────────────────────────────────────────
 // Ganti dengan URL Google Apps Script Anda setelah deploy
-const API_URL = "https://script.google.com/macros/s/AKfycbz5cWNASCTXOo5ZvNEQCKl8m3bBRd8iMx7Xl25uxD_ajGwEgDLSCt0LIUqOY_Bpz3fk/exec";
+const API_URL = "https://script.google.com/macros/s/AKfycbxcUpbCyoHBwObkdKksdhDwBzNAYgEvGawL4bKde5YY3lqeACGF3psIp6rahGMLrFJR/exec";
 
 const BULAN_LIST = ["Januari","Februari","Maret","April","Mei","Juni",
                     "Juli","Agustus","September","Oktober","November","Desember"];
 const BULAN_INI  = BULAN_LIST[new Date().getMonth()];
 const TAHUN_INI  = new Date().getFullYear();
 
+// ── CACHE CONFIG ─────────────────────────────────────────────────────────
+const CACHE_KEY = "sikas_cache";
+const CACHE_EXPIRY = 60 * 60 * 1000; // 1 jam dalam milidetik
+
+// Fungsi untuk menyimpan ke cache
+function setCache(key, data) {
+  const cache = {
+    timestamp: Date.now(),
+    data: data
+  };
+  localStorage.setItem(`${CACHE_KEY}_${key}`, JSON.stringify(cache));
+}
+
+// Fungsi untuk mengambil dari cache
+function getCache(key) {
+  const cached = localStorage.getItem(`${CACHE_KEY}_${key}`);
+  if (!cached) return null;
+  
+  const cache = JSON.parse(cached);
+  const now = Date.now();
+  
+  if (now - cache.timestamp > CACHE_EXPIRY) {
+    localStorage.removeItem(`${CACHE_KEY}_${key}`);
+    return null;
+  }
+  
+  return cache.data;
+}
+
+// Fungsi untuk clear cache
+function clearCache() {
+  Object.keys(localStorage).forEach(key => {
+    if (key.startsWith(CACHE_KEY)) {
+      localStorage.removeItem(key);
+    }
+  });
+}
+
 // ── STATE ────────────────────────────────────────────────────────────────
-let session      = JSON.parse(sessionStorage.getItem("sipam_session") || "null");
-let allPelanggan = [];          // cached pelanggan list
-let currentPel   = null;        // pelanggan di halaman detail
-let currentTrx   = null;        // transaksi di halaman detail
-let metodeAktif  = "Tunai";
-let fromPage     = "dashboard"; // untuk tombol Kembali
+let session      = JSON.parse(sessionStorage.getItem("sikas_session") || "null");
+let allAnggota   = [];          // cached anggota list
+let currentAnggota = null;      // anggota di halaman detail
+let currentTunggakan = null;    // tunggakan untuk form bayar
+let fromPage     = "dashboard";
 
 // Pagination state per section
-const PAGE_SIZE = 3;
+const PAGE_SIZE = 10;
 const pgState = {
   dashboard: { page: 1, data: [] },
   cari:      { page: 1, data: [] },
-  catat:     { page: 1, data: [] },
+  bayar:     { page: 1, data: [] },
   laporan:   { page: 1, data: [] },
 };
 
@@ -102,21 +139,18 @@ async function doLogin() {
     }
 
     document.getElementById("login-err").style.display = "none";
-    session = { token: res.token, nama: res.nama, role: res.role, id_user: res.id_user };
-    sessionStorage.setItem("sipam_session", JSON.stringify(session));
+    session = { token: res.token, nama: res.nama, role: res.role, username: res.username };
+    sessionStorage.setItem("sikas_session", JSON.stringify(session));
 
-    // Preload pelanggan di background agar halaman lain responsif
-    prefetchPelanggan();
+    // Preload anggota di background
+    prefetchAnggota();
     showApp();
 
   } catch (err) {
     showErr("Gagal terhubung: " + err.message);
   } finally {
     btn.disabled   = false;
-    btn.innerHTML  = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-      <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"
-        stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg> Masuk`;
+    btn.textContent = "Masuk";
   }
 }
 
@@ -127,9 +161,9 @@ function showErr(msg) {
 }
 
 function doLogout() {
-  sessionStorage.removeItem("sipam_session");
+  sessionStorage.removeItem("sikas_session");
   session      = null;
-  allPelanggan = [];
+  allAnggota   = [];
   // Reset pagination
   Object.keys(pgState).forEach(k => { pgState[k].page = 1; pgState[k].data = []; });
   showPage("pg-login");
@@ -147,7 +181,6 @@ function showPage(id) {
   const el = document.getElementById(id);
   if (el) {
     el.classList.add("active");
-    el.scrollTop = 0; // scroll the page element itself, not window
   }
 }
 
@@ -163,36 +196,36 @@ function showApp() {
 function goPage(page) {
   const map = {
     dashboard: "pg-dashboard",
-    pelanggan: "pg-pelanggan",
-    meteran:   "pg-meteran",
+    cari:      "pg-cari",
+    bayar:     "pg-bayar",
     laporan:   "pg-laporan",
   };
   showPage(map[page]);
 
   if (page === "dashboard") loadDashboard();
   if (page === "laporan")   { initFilterLaporan(); loadLaporan(); }
-  if (page === "pelanggan") {
+  if (page === "cari") {
     document.getElementById("search-input").value = "";
     renderSearchResults([]);
   }
-  if (page === "meteran") {
-    resetMeteranForm();
+  if (page === "bayar") {
+    resetBayarForm();
   }
 }
 
 function goBack() {
-  const dest = { meteran: "pg-meteran", pelanggan: "pg-pelanggan" };
+  const dest = { bayar: "pg-bayar", cari: "pg-cari" };
   showPage(dest[fromPage] || "pg-dashboard");
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  PREFETCH — cache pelanggan saat login agar UI tidak berat
+//  PREFETCH — cache anggota saat login
 // ════════════════════════════════════════════════════════════════════════
-async function prefetchPelanggan() {
-  if (allPelanggan.length) return;
+async function prefetchAnggota() {
+  if (allAnggota.length) return;
   try {
-    const res = await api({ action: "getPelanggan", token: session?.token });
-    if (res.status === "ok") allPelanggan = res.data;
+    const res = await api({ action: "getAnggota", token: session?.token });
+    if (res.status === "ok") allAnggota = res.data;
   } catch (e) { /* silent */ }
 }
 
@@ -204,25 +237,20 @@ async function loadDashboard() {
     `<div class="loading"><div class="spinner"></div> Memuat data…</div>`;
 
   try {
-    // Jalankan prefetch pelanggan dan laporan secara paralel
-    const [_, res] = await Promise.all([
-      prefetchPelanggan(),
-      api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI })
-    ]);
+    await prefetchAnggota();
+    const periode = `${BULAN_INI} ${TAHUN_INI}`;
+    const res = await api({ action: "getLaporanPeriode", token: session?.token, periode: periode });
+    
     if (res.status !== "ok") throw new Error(res.message);
 
     const { laporan, detail } = res;
 
-    // Total pelanggan: ambil dari cache sheet pelanggan (50 orang),
-    // bukan dari laporan bulan ini (hanya yang sudah punya transaksi)
-    const totalPelanggan = allPelanggan.length || laporan.total_pelanggan;
-
-    document.getElementById("s-total").textContent   = totalPelanggan;
+    document.getElementById("s-total").textContent   = allAnggota.length || laporan.total_anggota;
     document.getElementById("s-lunas").textContent   = laporan.sudah_bayar;
     document.getElementById("s-belum").textContent   = laporan.belum_bayar;
     document.getElementById("s-nominal").textContent = rp(laporan.total_terkumpul);
 
-    // Progress: dari total pelanggan aktif di sheet
+    const totalPelanggan = allAnggota.length || laporan.total_anggota;
     const pct = totalPelanggan
       ? Math.round(laporan.sudah_bayar / totalPelanggan * 100) : 0;
     document.getElementById("s-progress").style.width = pct + "%";
@@ -246,30 +274,31 @@ function renderDashboardList() {
 
   if (!data.length) {
     el.innerHTML = `<div class="empty">
-      <svg fill="none" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>
-      <p>Semua pelanggan sudah lunas! 🎉</p>
+      <p>✅ Semua anggota sudah lunas! 🎉</p>
     </div>`;
     return;
   }
 
   const pg = paginate(data, page);
-  pgState.dashboard.page = pg.curPage; // sync corrected page
+  pgState.dashboard.page = pg.curPage;
 
-  el.innerHTML =
-    pg.items.map(t => `
-      <div class="pel-item" onclick="openDetailFromDash('${esc(t.id_pelanggan)}')">
+  el.innerHTML = `
+    ${pg.items.map(t => `
+      <div class="pel-item" onclick="openDetail('${esc(t.id_anggota)}','dashboard')">
         <div class="avatar av-a">${initials(t.nama)}</div>
         <div class="pel-info">
           <div class="pel-name">${escHtml(t.nama)}</div>
-          <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
+          <div class="pel-sub">No ${escHtml(t.no_rumah)} · ${rp(t.nominal)}</div>
         </div>
         <span class="badge badge-red">Belum</span>
-      </div>`).join("")
-    + renderPagination("dashboard", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
+      </div>
+    `).join("")}
+    ${renderPagination("dashboard", pg.curPage, pg.totalPages, data.length, pg.start, pg.end)}
+  `;
 }
 
 // ════════════════════════════════════════════════════════════════════════
-//  CARI PELANGGAN
+//  CARI ANGGOTA (dengan pagination)
 // ════════════════════════════════════════════════════════════════════════
 let searchTimer;
 function doSearch(val) {
@@ -277,16 +306,15 @@ function doSearch(val) {
   if (!val.trim()) { renderSearchResults([]); return; }
   searchTimer = setTimeout(async () => {
     try {
-      // Use cached data if available, else fetch
       let results;
-      if (allPelanggan.length) {
+      if (allAnggota.length) {
         const kw = val.toLowerCase();
-        results = allPelanggan.filter(p =>
-          p.no_rumah.toLowerCase().includes(kw) ||
+        results = allAnggota.filter(p =>
+          String(p.no_rumah).toLowerCase().includes(kw) ||
           p.nama.toLowerCase().includes(kw)
         );
       } else {
-        const res = await api({ action: "searchPelanggan", token: session?.token, keyword: val });
+        const res = await api({ action: "searchAnggota", token: session?.token, keyword: val });
         results = res.status === "ok" ? res.data : [];
       }
       pgState.cari.data = results;
@@ -306,313 +334,229 @@ function renderSearchResults(list) {
 
   el.innerHTML = `<div class="card"><div class="card-body" style="padding:0 16px;">
     ${pg.items.map((p, i) => `
-      <div class="pel-item" onclick="openDetail('${esc(p.id_pelanggan)}','pelanggan')">
+      <div class="pel-item" onclick="openDetail('${esc(p.id_anggota)}','cari')">
         <div class="avatar ${["av-b","av-g","av-a"][i % 3]}">${initials(p.nama)}</div>
         <div class="pel-info">
           <div class="pel-name">${escHtml(p.nama)}</div>
-          <div class="pel-sub">${escHtml(p.no_rumah)} · ${escHtml(p.alamat)}</div>
+          <div class="pel-sub">No ${escHtml(p.no_rumah)} · ${escHtml(p.alamat)}</div>
         </div>
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
           <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>`).join("")}
+      </div>
+    `).join("")}
     ${renderPagination("cari", pg.curPage, pg.totalPages, list.length, pg.start, pg.end)}
   </div></div>`;
 }
 
-function changePage(section, dir) {
-  pgState[section].page += dir;
-  if (section === "dashboard") renderDashboardList();
-  if (section === "cari")      renderSearchResults(pgState.cari.data);
-  if (section === "catat")     renderMetSearchResults(pgState.catat.data);
-  if (section === "laporan")   renderLaporanList();
-}
-
 // ════════════════════════════════════════════════════════════════════════
-//  DETAIL PELANGGAN
+//  DETAIL ANGGOTA
 // ════════════════════════════════════════════════════════════════════════
-async function openDetail(id_pelanggan, from = "dashboard") {
+async function openDetail(id_anggota, from = "dashboard") {
   fromPage = from;
 
-  // Ensure cache
-  if (!allPelanggan.length) await prefetchPelanggan();
-  const pel = allPelanggan.find(p => p.id_pelanggan === id_pelanggan);
-  if (!pel) return;
+  if (!allAnggota.length) await prefetchAnggota();
+  const anggota = allAnggota.find(a => a.id_anggota === id_anggota);
+  if (!anggota) return;
 
-  currentPel = pel;
-  document.getElementById("detail-nama").textContent    = pel.nama;
-  document.getElementById("detail-norumah").textContent = pel.no_rumah;
-  document.getElementById("detail-alamat").textContent  = pel.alamat;
-  document.getElementById("detail-telp").textContent    = pel.no_telpon || "—";
-  document.getElementById("detail-id").textContent      = pel.id_pelanggan;
+  currentAnggota = anggota;
+  document.getElementById("detail-nama").textContent    = anggota.nama;
+  document.getElementById("detail-norumah").textContent = `No ${anggota.no_rumah}`;
+  document.getElementById("detail-riwayat").innerHTML = "<div class='loading'>⏳ Memuat riwayat…</div>";
 
-  // Show page immediately, then load tagihan
   showPage("pg-detail");
-  document.getElementById("detail-actions").innerHTML =
-    `<div class="loading"><div class="spinner"></div> Memuat tagihan…</div>`;
 
   try {
-    const lapRes = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
-    const trx = lapRes.status === "ok"
-      ? lapRes.detail?.find(t => t.id_pelanggan === id_pelanggan) : null;
-
-    const actionsEl = document.getElementById("detail-actions");
-
-    if (trx) {
-      currentTrx = trx;
-      const lunas = trx.status === "Lunas";
-      document.getElementById("detail-pakai").textContent   = trx.pemakaian + " m³";
-      document.getElementById("detail-tagihan").textContent = rp(trx.pemakaian * 1500);
-      document.getElementById("detail-total").textContent   = rp(trx.jumlah_bayar);
-
-      const badge = document.getElementById("detail-badge");
-      badge.textContent = lunas ? "Lunas" : "Belum Bayar";
-      badge.className   = "badge " + (lunas ? "badge-green" : "badge-red");
-
-      actionsEl.innerHTML = lunas
-        ? `<div class="card"><div class="card-body" style="text-align:center;color:var(--c-green);padding:20px;">
-            <b>✓ Sudah Lunas</b><br>
-            <small style="color:var(--c-text3)">${trx.tgl_bayar || "—"}</small>
-           </div></div>`
-        : `<button class="btn btn-green" onclick="openModal()">
-            <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-              <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>Terima Pembayaran
-           </button>`;
+    const res = await api({ action: "getRiwayat", token: session?.token, id_anggota: id_anggota });
+    if (res.status === "ok") {
+      if (res.data.length === 0) {
+        document.getElementById("detail-riwayat").innerHTML = "<div class='empty'>Belum ada riwayat pembayaran</div>";
+      } else {
+        document.getElementById("detail-riwayat").innerHTML = res.data.map(r => `
+          <div class="info-row">
+            <span class="lbl">${r.jenis_iuran} · ${r.bulan_dibayar} ${r.tahun}</span>
+            <span class="val">${rp(r.nominal)}</span>
+          </div>
+        `).join("");
+      }
     } else {
-      currentTrx = null;
-      document.getElementById("detail-pakai").textContent   = "—";
-      document.getElementById("detail-tagihan").textContent = "—";
-      document.getElementById("detail-total").textContent   = "—";
-      const badge = document.getElementById("detail-badge");
-      badge.textContent = "Belum Dicatat";
-      badge.className   = "badge badge-amber";
-      actionsEl.innerHTML = `<p style="color:var(--c-text3);font-size:13px;text-align:center;padding:16px 0;">
-        Meteran bulan ini belum dicatat.
-      </p>`;
+      document.getElementById("detail-riwayat").innerHTML = "<div class='empty'>Gagal memuat riwayat</div>";
     }
   } catch (err) {
     console.error("Detail:", err);
-    showToast("Gagal memuat tagihan", "error");
+    document.getElementById("detail-riwayat").innerHTML = "<div class='empty'>Gagal memuat riwayat</div>";
   }
 }
 
-function openDetailFromDash(id_pelanggan) { openDetail(id_pelanggan, "dashboard"); }
-
 // ════════════════════════════════════════════════════════════════════════
-//  CATAT METERAN
+//  FORM BAYAR (dengan pagination di hasil pencarian)
 // ════════════════════════════════════════════════════════════════════════
-let selPelMet    = null;
-let metSearchTimer;
+let bayarAnggota = null;
+let bayarSearchTimer;
 
-function resetMeteranForm() {
-  selPelMet = null;
-  pgState.catat.data = [];
-  pgState.catat.page = 1;
-  document.getElementById("met-search").value             = "";
-  document.getElementById("met-search-results").innerHTML = "";
-  document.getElementById("met-form-card").style.display  = "none";
-  document.getElementById("met-already-recorded").classList.add("hidden");
-  document.getElementById("met-last-info").classList.add("hidden");
-  document.getElementById("met-no-history").classList.add("hidden");
-  document.getElementById("met-lalu").removeAttribute("readonly");
-  document.getElementById("met-jalan").removeAttribute("readonly");
-  document.getElementById("met-lalu").value  = "";
-  document.getElementById("met-jalan").value = "";
-  document.getElementById("met-simpan-btn").disabled = false;
+function resetBayarForm() {
+  bayarAnggota = null;
+  pgState.bayar.data = [];
+  pgState.bayar.page = 1;
+  document.getElementById("bayar-search").value = "";
+  document.getElementById("bayar-search-results").innerHTML = "";
+  document.getElementById("bayar-form-card").style.display = "none";
 }
 
-function doMetSearch(val) {
-  clearTimeout(metSearchTimer);
+function doBayarSearch(val) {
+  clearTimeout(bayarSearchTimer);
   if (!val.trim()) {
-    document.getElementById("met-search-results").innerHTML = "";
-    pgState.catat.data = [];
+    document.getElementById("bayar-search-results").innerHTML = "";
+    pgState.bayar.data = [];
     return;
   }
-  metSearchTimer = setTimeout(async () => {
+  bayarSearchTimer = setTimeout(async () => {
     try {
       let results;
-      if (allPelanggan.length) {
+      if (allAnggota.length) {
         const kw = val.toLowerCase();
-        results = allPelanggan.filter(p =>
-          p.no_rumah.toLowerCase().includes(kw) || p.nama.toLowerCase().includes(kw)
+        results = allAnggota.filter(p =>
+          String(p.no_rumah).toLowerCase().includes(kw) ||
+          p.nama.toLowerCase().includes(kw)
         );
       } else {
-        const res = await api({ action: "searchPelanggan", token: session?.token, keyword: val });
+        const res = await api({ action: "searchAnggota", token: session?.token, keyword: val });
         results = res.status === "ok" ? res.data : [];
       }
-      pgState.catat.data  = results;
-      pgState.catat.page  = 1;
-      renderMetSearchResults(results);
-    } catch (e) { console.error("MetSearch:", e); }
+      pgState.bayar.data = results;
+      pgState.bayar.page = 1;
+      renderBayarSearchResults(results);
+    } catch (e) { console.error("BayarSearch:", e); }
   }, 300);
 }
 
-function renderMetSearchResults(list) {
-  const el = document.getElementById("met-search-results");
+function renderBayarSearchResults(list) {
+  const el = document.getElementById("bayar-search-results");
   if (!list.length) {
     el.innerHTML = `<p style="color:var(--c-text3);font-size:13px;padding:8px 0;">Tidak ditemukan.</p>`;
     return;
   }
-  const pg = paginate(list, pgState.catat.page);
-  pgState.catat.page = pg.curPage;
 
-  el.innerHTML =
-    pg.items.map(p => `
-      <div class="pel-item" style="padding:10px 0;" onclick="pilihPelMet('${esc(p.id_pelanggan)}')">
+  const pg = paginate(list, pgState.bayar.page);
+  pgState.bayar.page = pg.curPage;
+
+  el.innerHTML = `
+    ${pg.items.map(p => `
+      <div class="pel-item" onclick="pilihAnggotaBayar('${esc(p.id_anggota)}')">
         <div class="avatar av-b">${initials(p.nama)}</div>
         <div class="pel-info">
           <div class="pel-name">${escHtml(p.nama)}</div>
-          <div class="pel-sub">${escHtml(p.no_rumah)}</div>
+          <div class="pel-sub">No ${escHtml(p.no_rumah)}</div>
         </div>
         <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
           <path d="M9 18l6-6-6-6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
         </svg>
-      </div>`).join("")
-    + renderPagination("catat", pg.curPage, pg.totalPages, list.length, pg.start, pg.end);
+      </div>
+    `).join("")}
+    ${renderPagination("bayar", pg.curPage, pg.totalPages, list.length, pg.start, pg.end)}
+  `;
 }
 
-async function pilihPelMet(id) {
-  if (!allPelanggan.length) await prefetchPelanggan();
-  selPelMet = allPelanggan.find(p => p.id_pelanggan === id);
-  if (!selPelMet) return;
+async function pilihAnggotaBayar(id) {
+  if (!allAnggota.length) await prefetchAnggota();
+  bayarAnggota = allAnggota.find(a => a.id_anggota === id);
+  if (!bayarAnggota) return;
 
-  // Reset form state
-  document.getElementById("met-nama-lbl").textContent = selPelMet.nama;
-  document.getElementById("met-no-lbl").textContent   = selPelMet.no_rumah;
-  document.getElementById("met-lalu").value            = "";
-  document.getElementById("met-lalu").removeAttribute("readonly");
-  document.getElementById("met-jalan").value           = "";
-  document.getElementById("met-lalu-hint").textContent = "m³";
-  document.getElementById("met-already-recorded").classList.add("hidden");
-  document.getElementById("met-last-info").classList.add("hidden");
-  document.getElementById("met-no-history").classList.add("hidden");
-  document.getElementById("met-simpan-btn").disabled   = false;
-  hitungPemakaian();
-  document.getElementById("met-form-card").style.display = "block";
-  document.getElementById("met-search-results").innerHTML = "";
-  document.getElementById("met-search").value = selPelMet.nama;
+  document.getElementById("bayar-nama").textContent = bayarAnggota.nama;
+  document.getElementById("bayar-norumah").textContent = bayarAnggota.no_rumah;
+  document.getElementById("bayar-search").value = bayarAnggota.nama;
+  document.getElementById("bayar-search-results").innerHTML = "";
+  document.getElementById("bayar-form-card").style.display = "block";
+  
+  await loadTunggakan(bayarAnggota.id_anggota);
+}
 
-  // ── Ambil meter terakhir (selalu diperlukan) ────────────────
-  let lastMeter = null;
+async function loadTunggakan(id) {
   try {
-    const histRes = await api({ action: "getLastMeter", token: session?.token, id_pelanggan: id });
-    if (histRes.status === "ok" && histRes.meter_berjalan != null) {
-      lastMeter = histRes;
-    }
-  } catch (e) { console.error("LastMeter:", e); }
-
-  // ── Cek duplikat: sudah dicatat bulan ini? ───────────────────
-  try {
-    const lapRes = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
-    if (lapRes.status === "ok") {
-      const existing = lapRes.detail?.find(t => t.id_pelanggan === id);
-      if (existing) {
-        // Sudah tercatat — tampilkan data existing, semua input disabled
-        document.getElementById("met-already-recorded").classList.remove("hidden");
-        document.getElementById("met-simpan-btn").disabled = true;
-
-        // Tampilkan meter bulan lalu (dari lastMeter) dan meter berjalan (dari existing)
-        if (lastMeter) {
-          document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
-          document.getElementById("met-lalu-hint").textContent =
-            `m³ — dari ${lastMeter.bulan} ${lastMeter.tahun}`;
-          document.getElementById("met-last-bulan").textContent =
-            `${lastMeter.bulan} ${lastMeter.tahun}`;
-          document.getElementById("met-last-nilai").textContent = lastMeter.meter_berjalan;
-          document.getElementById("met-last-info").classList.remove("hidden");
-        }
-        // Tampilkan meter berjalan bulan ini (hitung balik dari pemakaian + lalu)
-        const meterBerjalan = lastMeter
-          ? lastMeter.meter_berjalan + (existing.pemakaian || 0)
-          : (existing.pemakaian || 0);
-        document.getElementById("met-jalan").value = meterBerjalan;
-        // Disable kedua field
-        document.getElementById("met-lalu").setAttribute("readonly", true);
-        document.getElementById("met-jalan").setAttribute("readonly", true);
-        hitungPemakaian();
-        return;
+    const res = await api({ action: "getTunggakan", token: session?.token, id_anggota: id });
+    if (res.status === "ok") {
+      currentTunggakan = res.data;
+      const kasList = res.data.kas || [];
+      const rmdList = res.data.rmd || [];
+      
+      document.getElementById("tunggakan-kas").innerHTML = `
+        <div class="info-row">
+          <span class="lbl">💰 Kas (${rp(res.data.iuran_kas)}/bln)</span>
+          <span class="val">${kasList.length} bulan tunggakan · ${rp(res.data.total_kas)}</span>
+        </div>
+      `;
+      
+      if (rmdList.length > 0) {
+        document.getElementById("bayar-rmd-group").style.display = "block";
+        document.getElementById("tunggakan-rmd").innerHTML = `
+          <div class="info-row">
+            <span class="lbl">🏦 RMD (${rp(res.data.iuran_rmd)}/bln)</span>
+            <span class="val">${rmdList.length} bulan tunggakan · ${rp(res.data.total_rmd)}</span>
+          </div>
+        `;
+      } else {
+        document.getElementById("bayar-rmd-group").style.display = "none";
+        document.getElementById("tunggakan-rmd").innerHTML = "";
       }
+      
+      document.getElementById("bayar-total").textContent = rp(res.data.total_kas + res.data.total_rmd);
+      document.getElementById("bayar-jml-kas").value = 0;
+      document.getElementById("bayar-jml-kas").max = kasList.length;
+      document.getElementById("bayar-jml-rmd").value = 0;
+      if (rmdList.length) document.getElementById("bayar-jml-rmd").max = rmdList.length;
+      updateTotalBayar();
     }
-  } catch (e) { console.error("Cek existing:", e); }
-
-  // ── Belum ada data bulan ini: auto-fill meter bulan lalu ────
-  if (lastMeter) {
-    document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
-    document.getElementById("met-lalu").setAttribute("readonly", true);
-    document.getElementById("met-lalu-hint").textContent =
-      `m³ — otomatis dari ${lastMeter.bulan} ${lastMeter.tahun}`;
-    document.getElementById("met-last-bulan").textContent =
-      `${lastMeter.bulan} ${lastMeter.tahun}`;
-    document.getElementById("met-last-nilai").textContent = lastMeter.meter_berjalan;
-    document.getElementById("met-last-info").classList.remove("hidden");
-    hitungPemakaian();
-  } else {
-    document.getElementById("met-no-history").classList.remove("hidden");
+  } catch(e) { 
+    showToast("Gagal muat tunggakan", "error");
   }
 }
 
-function hitungPemakaian() {
-  const lalu   = parseFloat(document.getElementById("met-lalu").value)  || 0;
-  const jalan  = parseFloat(document.getElementById("met-jalan").value) || 0;
-  const pakai  = Math.max(0, jalan - lalu);
-  const tagihan = pakai * 1500;
-  const total   = tagihan + 5000;
-  document.getElementById("met-pakai").textContent   = pakai + " m³";
-  document.getElementById("met-tagihan").textContent = rp(tagihan);
-  document.getElementById("met-total").textContent   = rp(total);
+function updateTotalBayar() {
+  const jmlKas = parseInt(document.getElementById("bayar-jml-kas").value) || 0;
+  const jmlRmd = parseInt(document.getElementById("bayar-jml-rmd").value) || 0;
+  const total = (jmlKas * (currentTunggakan?.iuran_kas || 0)) + (jmlRmd * (currentTunggakan?.iuran_rmd || 0));
+  document.getElementById("bayar-grand").textContent = rp(total);
 }
 
-async function simpanMeteran() {
-  if (!selPelMet) { showToast("Pilih pelanggan dahulu", "error"); return; }
-
-  const lalu  = parseFloat(document.getElementById("met-lalu").value);
-  const jalan = parseFloat(document.getElementById("met-jalan").value);
-
-  if (isNaN(lalu) || isNaN(jalan))  { showToast("Isi meter bulan lalu & berjalan", "error"); return; }
-  if (jalan < lalu)                  { showToast("Meter berjalan tidak boleh lebih kecil dari bulan lalu", "error"); return; }
-  if (jalan === lalu)                { showToast("Pemakaian 0 m³ — periksa kembali angka meteran", "error"); return; }
-
-  const btn = document.getElementById("met-simpan-btn");
-  btn.disabled    = true;
-  btn.textContent = "Menyimpan…";
-
+async function simpanPembayaran() {
+  const jmlKas = parseInt(document.getElementById("bayar-jml-kas").value) || 0;
+  const jmlRmd = parseInt(document.getElementById("bayar-jml-rmd").value) || 0;
+  
+  if (jmlKas === 0 && jmlRmd === 0) {
+    showToast("Pilih minimal 1 bulan untuk dibayar", "error");
+    return;
+  }
+  
+  const periode = `${BULAN_INI} ${TAHUN_INI}`;
+  const btn = document.getElementById("btn-simpan-bayar");
+  btn.disabled = true;
+  btn.textContent = "⏳ Menyimpan...";
+  
   try {
-    const ts = Date.now();
-    const res = await api({
-      action: "saveMeteran",
-      token:  session?.token,
-      data: {
-        id_meteran    : `MET-${ts}`,
-        id_transaksi  : `TRX-${ts}`,
-        id_pelanggan  : selPelMet.id_pelanggan,
-        no_rumah      : selPelMet.no_rumah,
-        nama          : selPelMet.nama,
-        bulan         : BULAN_INI,
-        tahun         : TAHUN_INI,
-        meter_lalu    : lalu,
-        meter_berjalan: jalan,
-        petugas       : session?.nama || "",
-      }
+    const res = await api({ 
+      action: "simpanPembayaran", 
+      token: session?.token, 
+      data: { 
+        id_anggota: bayarAnggota.id_anggota, 
+        periode_tagihan: periode, 
+        jml_bulan_kas: jmlKas, 
+        jml_bulan_rmd: jmlRmd, 
+        petugas: session?.nama || session?.username 
+      } 
     });
-
+    
     if (res.status === "ok") {
-      showToast("Data meteran disimpan ✓", "success");
-      resetMeteranForm();
-      loadDashboard(); // refresh dashboard stats
+      showToast(res.message, "success");
+      resetBayarForm();
+      loadDashboard();
     } else {
-      showToast(res.message || "Gagal menyimpan", "error");
+      showToast(res.message || "Gagal", "error");
     }
-  } catch (err) {
-    console.error("SaveMeteran:", err);
-    showToast("Gagal menyimpan data meteran", "error");
-  } finally {
-    btn.disabled   = false;
-    btn.innerHTML  = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-      <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/>
-      <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/>
-    </svg> Simpan Data Meteran`;
+  } catch(e) { 
+    showToast("Error: " + e.message, "error"); 
+  } finally { 
+    btn.disabled = false; 
+    btn.textContent = "💾 Simpan Pembayaran"; 
   }
 }
 
@@ -620,51 +564,62 @@ async function simpanMeteran() {
 //  LAPORAN
 // ════════════════════════════════════════════════════════════════════════
 function initFilterLaporan() {
-  const selTahun = document.getElementById("lap-filter-tahun");
-  if (selTahun.options.length) return; // already initialized
-  for (let y = TAHUN_INI; y >= TAHUN_INI - 3; y--) {
-    const opt = document.createElement("option");
-    opt.value = y; opt.textContent = y;
-    selTahun.appendChild(opt);
+  const selBulan = document.getElementById("lap-filter-bulan");
+  if (!selBulan.options.length) {
+    BULAN_LIST.forEach(b => {
+      const opt = document.createElement("option");
+      opt.value = b;
+      opt.textContent = b;
+      selBulan.appendChild(opt);
+    });
+    selBulan.value = BULAN_INI;
   }
-  document.getElementById("lap-filter-bulan").value = BULAN_INI;
-  document.getElementById("lap-filter-tahun").value = TAHUN_INI;
+  
+  const selTahun = document.getElementById("lap-filter-tahun");
+  if (!selTahun.options.length) {
+    for (let y = TAHUN_INI; y >= TAHUN_INI - 3; y--) {
+      const opt = document.createElement("option");
+      opt.value = y;
+      opt.textContent = y;
+      selTahun.appendChild(opt);
+    }
+    selTahun.value = TAHUN_INI;
+  }
 }
 
 function terapkanFilterLaporan() {
   const bulan = document.getElementById("lap-filter-bulan").value;
-  const tahun = parseInt(document.getElementById("lap-filter-tahun").value);
+  const tahun = document.getElementById("lap-filter-tahun").value;
   pgState.laporan.page = 1;
   loadLaporan(bulan, tahun);
 }
 
 async function loadLaporan(bulan = BULAN_INI, tahun = TAHUN_INI) {
-  document.getElementById("lap-periode").textContent = `${bulan} ${tahun}`;
-  ["lap-total","lap-lunas","lap-belum","lap-terkumpul","lap-piutang"]
-    .forEach(id => { const el = document.getElementById(id); if (el) el.textContent = "…"; });
-  document.getElementById("lap-list").innerHTML =
-    `<div class="loading"><div class="spinner"></div> Memuat ${bulan} ${tahun}…</div>`;
+  const periode = `${bulan} ${tahun}`;
+  document.getElementById("lap-periode").textContent = periode;
+  ["lap-total","lap-lunas","lap-belum","lap-terkumpul"].forEach(id => { 
+    const el = document.getElementById(id); 
+    if (el) el.textContent = "…"; 
+  });
+  document.getElementById("lap-list").innerHTML = `<div class="loading"><div class="spinner"></div> Memuat…</div>`;
 
   try {
-    const res = await api({ action: "getLaporan", token: session?.token, bulan, tahun });
+    const res = await api({ action: "getLaporanPeriode", token: session?.token, periode: periode });
     if (res.status !== "ok") throw new Error(res.message);
 
     const { laporan, detail } = res;
-    document.getElementById("lap-total").textContent     = laporan.total_pelanggan;
+    document.getElementById("lap-total").textContent     = laporan.total_anggota;
     document.getElementById("lap-lunas").textContent     = laporan.sudah_bayar;
     document.getElementById("lap-belum").textContent     = laporan.belum_bayar;
     document.getElementById("lap-terkumpul").textContent = rp(laporan.total_terkumpul);
-    document.getElementById("lap-piutang").textContent   = rp(laporan.total_piutang);
 
-    const belum = (detail || []).filter(t => t.status === "Belum Bayar");
-    pgState.laporan.data = belum;
+    pgState.laporan.data = detail || [];
     pgState.laporan.page = 1;
     renderLaporanList();
 
   } catch (err) {
     console.error("Laporan:", err);
-    document.getElementById("lap-list").innerHTML =
-      `<div class="empty"><p>Gagal memuat data. Coba lagi.</p></div>`;
+    document.getElementById("lap-list").innerHTML = `<div class="empty"><p>Gagal memuat data</p></div>`;
   }
 }
 
@@ -673,79 +628,25 @@ function renderLaporanList() {
   const el = document.getElementById("lap-list");
 
   if (!data.length) {
-    el.innerHTML = `<div class="empty"><p>Semua sudah lunas 🎉</p></div>`;
+    el.innerHTML = `<div class="empty"><p>Tidak ada data untuk periode ini</p></div>`;
     return;
   }
 
   const pg = paginate(data, page);
   pgState.laporan.page = pg.curPage;
 
-  el.innerHTML = pg.items.map(t => `
-    <div class="pel-item" onclick="openDetail('${esc(t.id_pelanggan)}','laporan')">
-      <div class="avatar av-a">${initials(t.nama)}</div>
-      <div class="pel-info">
-        <div class="pel-name">${escHtml(t.nama)}</div>
-        <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
+  el.innerHTML = `
+    ${pg.items.map(t => `
+      <div class="info-row">
+        <div class="pel-info" style="flex:1">
+          <div class="pel-name">${escHtml(t.nama)}</div>
+          <div class="pel-sub">No ${escHtml(t.no_rumah)} · ${t.jenis_iuran}</div>
+        </div>
+        <span class="badge ${t.status === 'Lunas' ? 'badge-green' : 'badge-red'}">${rp(t.nominal)}</span>
       </div>
-      <span class="badge badge-red">Belum</span>
-    </div>`).join("")
-  + renderPagination("laporan", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
-}
-
-// ════════════════════════════════════════════════════════════════════════
-//  MODAL BAYAR
-// ════════════════════════════════════════════════════════════════════════
-function openModal() {
-  if (!currentTrx) return;
-  document.getElementById("modal-nama").textContent  = currentPel?.nama || "—";
-  document.getElementById("modal-total").textContent = rp(currentTrx.jumlah_bayar);
-  pilihMetode("Tunai");
-  document.getElementById("modal-bayar").classList.add("show");
-}
-
-function closeModal() {
-  document.getElementById("modal-bayar").classList.remove("show");
-}
-
-function pilihMetode(m) {
-  metodeAktif = m;
-  ["Tunai","Transfer","QRIS"].forEach(x => {
-    document.getElementById("met-" + x.toLowerCase())
-      .classList.toggle("active", x === m);
-  });
-}
-
-async function konfirmasiBayar() {
-  const btn = document.getElementById("btn-konfirmasi");
-  btn.disabled    = true;
-  btn.textContent = "Memproses…";
-
-  try {
-    const res = await api({
-      action:       "saveTransaksi",
-      token:        session?.token,
-      id_transaksi: currentTrx.id_transaksi,
-      metode_bayar: metodeAktif,
-      petugas:      session?.nama || "",   // ← FIX: kirim nama petugas
-    });
-
-    closeModal();
-    if (res.status === "ok") {
-      showToast("Pembayaran berhasil dicatat ✓", "success");
-      // Reload detail halaman yang sama
-      setTimeout(() => openDetail(currentPel.id_pelanggan, fromPage), 400);
-    } else {
-      showToast(res.message || "Gagal memproses", "error");
-    }
-  } catch (err) {
-    console.error("Bayar:", err);
-    showToast("Gagal memproses pembayaran", "error");
-  } finally {
-    btn.disabled  = false;
-    btn.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-      <path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-    </svg> Tandai Lunas`;
-  }
+    `).join("")}
+    ${renderPagination("laporan", pg.curPage, pg.totalPages, data.length, pg.start, pg.end)}
+  `;
 }
 
 // ════════════════════════════════════════════════════════════════════════
@@ -779,6 +680,14 @@ function renderPagination(section, page, totalPages, total, start, end) {
   </div>`;
 }
 
+function changePage(section, dir) {
+  pgState[section].page += dir;
+  if (section === "dashboard") renderDashboardList();
+  if (section === "cari")      renderSearchResults(pgState.cari.data);
+  if (section === "bayar")     renderBayarSearchResults(pgState.bayar.data);
+  if (section === "laporan")   renderLaporanList();
+}
+
 // ════════════════════════════════════════════════════════════════════════
 //  UTILITIES
 // ════════════════════════════════════════════════════════════════════════
@@ -790,12 +699,10 @@ function initials(nama) {
   return (nama || "").split(" ").slice(0, 2).map(w => w[0] || "").join("").toUpperCase();
 }
 
-/** Safe attribute value (no quotes break) */
 function esc(str) {
   return String(str || "").replace(/'/g, "\\'");
 }
 
-/** Safe HTML content */
 function escHtml(str) {
   return String(str || "")
     .replace(/&/g, "&amp;")
@@ -806,9 +713,10 @@ function escHtml(str) {
 
 let toastTimer;
 function showToast(msg, type = "") {
-  const el    = document.getElementById("toast");
+  const el = document.getElementById("toast");
+  if (!el) return;
   el.textContent = msg;
-  el.className   = "toast show" + (type ? " " + type : "");
+  el.className = "toast show" + (type ? " " + type : "");
   clearTimeout(toastTimer);
   toastTimer = setTimeout(() => { el.className = "toast"; }, 2800);
 }
