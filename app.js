@@ -19,6 +19,7 @@ let currentPel   = null;        // pelanggan di halaman detail
 let currentTrx   = null;        // transaksi di halaman detail
 let metodeAktif  = "Tunai";
 let fromPage     = "dashboard"; // untuk tombol Kembali
+let currentPeriode = { bulan: BULAN_INI, tahun: TAHUN_INI };
 
 // Pagination state per section
 const PAGE_SIZE = 3;
@@ -181,7 +182,7 @@ function goPage(page) {
 }
 
 function goBack() {
-  const dest = { meteran: "pg-meteran", pelanggan: "pg-pelanggan" };
+  const dest = { meteran: "pg-meteran", pelanggan: "pg-pelanggan", laporan: "pg-laporan", dashboard: "pg-dashboard" };
   showPage(dest[fromPage] || "pg-dashboard");
 }
 
@@ -204,17 +205,13 @@ async function loadDashboard() {
     `<div class="loading"><div class="spinner"></div> Memuat data…</div>`;
 
   try {
-    // Jalankan prefetch pelanggan dan laporan secara paralel
     const [_, res] = await Promise.all([
       prefetchPelanggan(),
-      api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI })
+      api({ action: "getDashboard", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI })
     ]);
     if (res.status !== "ok") throw new Error(res.message);
 
     const { laporan, detail } = res;
-
-    // Total pelanggan: ambil dari cache sheet pelanggan (50 orang),
-    // bukan dari laporan bulan ini (hanya yang sudah punya transaksi)
     const totalPelanggan = allPelanggan.length || laporan.total_pelanggan;
 
     document.getElementById("s-total").textContent   = totalPelanggan;
@@ -222,13 +219,12 @@ async function loadDashboard() {
     document.getElementById("s-belum").textContent   = laporan.belum_bayar;
     document.getElementById("s-nominal").textContent = rp(laporan.total_terkumpul);
 
-    // Progress: dari total pelanggan aktif di sheet
     const pct = totalPelanggan
       ? Math.round(laporan.sudah_bayar / totalPelanggan * 100) : 0;
     document.getElementById("s-progress").style.width = pct + "%";
     document.getElementById("s-pct").textContent      = pct + "% lunas";
 
-    const belum = (detail || []).filter(t => t.status === "Belum Bayar");
+    const belum = (detail || []).filter(t => t.status !== "Lunas");
     pgState.dashboard.data = belum;
     pgState.dashboard.page = 1;
     renderDashboardList();
@@ -253,18 +249,29 @@ function renderDashboardList() {
   }
 
   const pg = paginate(data, page);
-  pgState.dashboard.page = pg.curPage; // sync corrected page
+  pgState.dashboard.page = pg.curPage;
 
   el.innerHTML =
-    pg.items.map(t => `
-      <div class="pel-item" onclick="openDetailFromDash('${esc(t.id_pelanggan)}')">
+    pg.items.map(t => {
+      const isUnrecorded = t.status === "Belum Dicatat";
+      const badge = isUnrecorded
+        ? `<span class="badge badge-amber">Belum Dicatat</span>`
+        : `<span class="badge badge-red">Belum</span>`;
+      const nominal = isUnrecorded ? "Belum dicatat" : rp(t.jumlah_bayar);
+      const periode = t.periode_label || `${t.bulan || BULAN_INI} ${t.tahun || TAHUN_INI}`;
+      const bulan = esc(t.bulan || BULAN_INI);
+      const tahun = esc(t.tahun || TAHUN_INI);
+
+      return `
+      <div class="pel-item" onclick="openDetailFromDash('${esc(t.id_pelanggan)}','${bulan}','${tahun}')">
         <div class="avatar av-a">${initials(t.nama)}</div>
         <div class="pel-info">
           <div class="pel-name">${escHtml(t.nama)}</div>
-          <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
+          <div class="pel-sub">${escHtml(t.no_rumah)} · ${escHtml(periode)} · ${nominal}</div>
         </div>
-        <span class="badge badge-red">Belum</span>
-      </div>`).join("")
+        ${badge}
+      </div>`;
+    }).join("")
     + renderPagination("dashboard", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
 }
 
@@ -331,10 +338,10 @@ function changePage(section, dir) {
 // ════════════════════════════════════════════════════════════════════════
 //  DETAIL PELANGGAN
 // ════════════════════════════════════════════════════════════════════════
-async function openDetail(id_pelanggan, from = "dashboard") {
+async function openDetail(id_pelanggan, from = "dashboard", bulan = BULAN_INI, tahun = TAHUN_INI) {
   fromPage = from;
+  currentPeriode = { bulan, tahun };
 
-  // Ensure cache
   if (!allPelanggan.length) await prefetchPelanggan();
   const pel = allPelanggan.find(p => p.id_pelanggan === id_pelanggan);
   if (!pel) return;
@@ -346,26 +353,30 @@ async function openDetail(id_pelanggan, from = "dashboard") {
   document.getElementById("detail-telp").textContent    = pel.no_telpon || "—";
   document.getElementById("detail-id").textContent      = pel.id_pelanggan;
 
-  // Show page immediately, then load tagihan
+  const titleEl = document.getElementById("detail-title") || document.querySelector("#pg-detail .card:nth-of-type(2) .card-title");
+  if (titleEl) titleEl.textContent = `Tagihan ${bulan} ${tahun}`;
+
   showPage("pg-detail");
   document.getElementById("detail-actions").innerHTML =
     `<div class="loading"><div class="spinner"></div> Memuat tagihan…</div>`;
 
   try {
-    const lapRes = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
+    const lapRes = await api({ action: "getLaporan", token: session?.token, bulan, tahun });
     const trx = lapRes.status === "ok"
       ? lapRes.detail?.find(t => t.id_pelanggan === id_pelanggan) : null;
 
     const actionsEl = document.getElementById("detail-actions");
+    const badge = document.getElementById("detail-badge");
+    const adminEl = document.getElementById("detail-admin");
 
-    if (trx) {
+    if (trx && trx.status !== "Belum Dicatat" && trx.id_transaksi) {
       currentTrx = trx;
       const lunas = trx.status === "Lunas";
       document.getElementById("detail-pakai").textContent   = trx.pemakaian + " m³";
-      document.getElementById("detail-tagihan").textContent = rp(trx.pemakaian * 1500);
+      document.getElementById("detail-tagihan").textContent = rp(trx.tagihan);
+      if (adminEl) adminEl.textContent = rp(trx.admin || 5000);
       document.getElementById("detail-total").textContent   = rp(trx.jumlah_bayar);
 
-      const badge = document.getElementById("detail-badge");
       badge.textContent = lunas ? "Lunas" : "Belum Bayar";
       badge.className   = "badge " + (lunas ? "badge-green" : "badge-red");
 
@@ -384,12 +395,12 @@ async function openDetail(id_pelanggan, from = "dashboard") {
       currentTrx = null;
       document.getElementById("detail-pakai").textContent   = "—";
       document.getElementById("detail-tagihan").textContent = "—";
+      if (adminEl) adminEl.textContent = "—";
       document.getElementById("detail-total").textContent   = "—";
-      const badge = document.getElementById("detail-badge");
       badge.textContent = "Belum Dicatat";
       badge.className   = "badge badge-amber";
       actionsEl.innerHTML = `<p style="color:var(--c-text3);font-size:13px;text-align:center;padding:16px 0;">
-        Meteran bulan ini belum dicatat.
+        Meteran ${bulan} ${tahun} belum dicatat.
       </p>`;
     }
   } catch (err) {
@@ -398,7 +409,9 @@ async function openDetail(id_pelanggan, from = "dashboard") {
   }
 }
 
-function openDetailFromDash(id_pelanggan) { openDetail(id_pelanggan, "dashboard"); }
+function openDetailFromDash(id_pelanggan, bulan = BULAN_INI, tahun = TAHUN_INI) {
+  openDetail(id_pelanggan, "dashboard", bulan, tahun);
+}
 
 // ════════════════════════════════════════════════════════════════════════
 //  CATAT METERAN
@@ -656,7 +669,7 @@ async function loadLaporan(bulan = BULAN_INI, tahun = TAHUN_INI) {
     document.getElementById("lap-terkumpul").textContent = rp(laporan.total_terkumpul);
     document.getElementById("lap-piutang").textContent   = rp(laporan.total_piutang);
 
-    const belum = (detail || []).filter(t => t.status === "Belum Bayar");
+    const belum = (detail || []).filter(t => t.status !== "Lunas");
     pgState.laporan.data = belum;
     pgState.laporan.page = 1;
     renderLaporanList();
@@ -680,15 +693,25 @@ function renderLaporanList() {
   const pg = paginate(data, page);
   pgState.laporan.page = pg.curPage;
 
-  el.innerHTML = pg.items.map(t => `
-    <div class="pel-item" onclick="openDetail('${esc(t.id_pelanggan)}','laporan')">
+  el.innerHTML = pg.items.map(t => {
+    const isUnrecorded = t.status === "Belum Dicatat";
+    const badge = isUnrecorded
+      ? `<span class="badge badge-amber">Belum Dicatat</span>`
+      : `<span class="badge badge-red">Belum</span>`;
+    const nominal = isUnrecorded ? "Belum dicatat" : rp(t.jumlah_bayar);
+    const bulan = esc(t.bulan || document.getElementById("lap-filter-bulan").value || BULAN_INI);
+    const tahun = esc(t.tahun || document.getElementById("lap-filter-tahun").value || TAHUN_INI);
+
+    return `
+    <div class="pel-item" onclick="openDetail('${esc(t.id_pelanggan)}','laporan','${bulan}','${tahun}')">
       <div class="avatar av-a">${initials(t.nama)}</div>
       <div class="pel-info">
         <div class="pel-name">${escHtml(t.nama)}</div>
-        <div class="pel-sub">${escHtml(t.no_rumah)} · ${rp(t.jumlah_bayar)}</div>
+        <div class="pel-sub">${escHtml(t.no_rumah)} · ${escHtml(t.periode_label || `${bulan} ${tahun}`)} · ${nominal}</div>
       </div>
-      <span class="badge badge-red">Belum</span>
-    </div>`).join("")
+      ${badge}
+    </div>`;
+  }).join("")
   + renderPagination("laporan", pg.curPage, pg.totalPages, data.length, pg.start, pg.end);
 }
 
@@ -733,7 +756,7 @@ async function konfirmasiBayar() {
     if (res.status === "ok") {
       showToast("Pembayaran berhasil dicatat ✓", "success");
       // Reload detail halaman yang sama
-      setTimeout(() => openDetail(currentPel.id_pelanggan, fromPage), 400);
+      setTimeout(() => openDetail(currentPel.id_pelanggan, fromPage, currentPeriode.bulan, currentPeriode.tahun), 400);
     } else {
       showToast(res.message || "Gagal memproses", "error");
     }
