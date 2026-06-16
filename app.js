@@ -370,12 +370,17 @@ async function openDetail(id_pelanggan, from = "dashboard", bulan = BULAN_INI, t
     const adminEl = document.getElementById("detail-admin");
 
     if (trx && trx.status !== "Belum Dicatat" && trx.id_transaksi) {
-      currentTrx = trx;
-      const lunas = trx.status === "Lunas";
-      document.getElementById("detail-pakai").textContent   = trx.pemakaian + " m³";
-      document.getElementById("detail-tagihan").textContent = rp(trx.tagihan);
-      if (adminEl) adminEl.textContent = rp(trx.admin || 5000);
-      document.getElementById("detail-total").textContent   = rp(trx.jumlah_bayar);
+      const trxBulan = trx.bulan || bulan;
+      const trxTahun = trx.tahun || tahun;
+      currentPeriode = { bulan: trxBulan, tahun: trxTahun };
+      currentTrx = { ...trx, bulan: trxBulan, tahun: trxTahun };
+      if (titleEl) titleEl.textContent = `Tagihan ${trxBulan} ${trxTahun}`;
+
+      const lunas = currentTrx.status === "Lunas";
+      document.getElementById("detail-pakai").textContent   = currentTrx.pemakaian + " m³";
+      document.getElementById("detail-tagihan").textContent = rp(currentTrx.tagihan);
+      if (adminEl) adminEl.textContent = rp(currentTrx.admin || 5000);
+      document.getElementById("detail-total").textContent   = rp(currentTrx.jumlah_bayar);
 
       badge.textContent = lunas ? "Lunas" : "Belum Bayar";
       badge.className   = "badge " + (lunas ? "badge-green" : "badge-red");
@@ -383,7 +388,7 @@ async function openDetail(id_pelanggan, from = "dashboard", bulan = BULAN_INI, t
       actionsEl.innerHTML = lunas
         ? `<div class="card"><div class="card-body" style="text-align:center;color:var(--c-green);padding:20px;">
             <b>✓ Sudah Lunas</b><br>
-            <small style="color:var(--c-text3)">${trx.tgl_bayar || "—"}</small>
+            <small style="color:var(--c-text3)">${currentTrx.tgl_bayar || "—"}</small>
            </div></div>`
         : `<button class="btn btn-green" onclick="openModal()">
             <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
@@ -392,6 +397,11 @@ async function openDetail(id_pelanggan, from = "dashboard", bulan = BULAN_INI, t
             </svg>Terima Pembayaran
            </button>`;
     } else {
+      const periodeBulan = trx?.bulan || bulan;
+      const periodeTahun = trx?.tahun || tahun;
+      currentPeriode = { bulan: periodeBulan, tahun: periodeTahun };
+      if (titleEl) titleEl.textContent = `Tagihan ${periodeBulan} ${periodeTahun}`;
+
       currentTrx = null;
       document.getElementById("detail-pakai").textContent   = "—";
       document.getElementById("detail-tagihan").textContent = "—";
@@ -400,7 +410,7 @@ async function openDetail(id_pelanggan, from = "dashboard", bulan = BULAN_INI, t
       badge.textContent = "Belum Dicatat";
       badge.className   = "badge badge-amber";
       actionsEl.innerHTML = `<p style="color:var(--c-text3);font-size:13px;text-align:center;padding:16px 0;">
-        Meteran ${bulan} ${tahun} belum dicatat.
+        Meteran ${periodeBulan} ${periodeTahun} belum dicatat.
       </p>`;
     }
   } catch (err) {
@@ -434,6 +444,8 @@ function resetMeteranForm() {
   document.getElementById("met-lalu").value  = "";
   document.getElementById("met-jalan").value = "";
   document.getElementById("met-simpan-btn").disabled = false;
+  const bayarBtnReset = document.getElementById("met-bayar-btn");
+  if (bayarBtnReset) bayarBtnReset.disabled = false;
 }
 
 function doMetSearch(val) {
@@ -502,6 +514,8 @@ async function pilihPelMet(id) {
   document.getElementById("met-last-info").classList.add("hidden");
   document.getElementById("met-no-history").classList.add("hidden");
   document.getElementById("met-simpan-btn").disabled   = false;
+  const bayarBtnInit = document.getElementById("met-bayar-btn");
+  if (bayarBtnInit) bayarBtnInit.disabled = false;
   hitungPemakaian();
   document.getElementById("met-form-card").style.display = "block";
   document.getElementById("met-search-results").innerHTML = "";
@@ -536,6 +550,8 @@ async function pilihPelMet(id) {
         // Sudah tercatat pada periode berjalan. Tampilkan data existing dan kunci input.
         document.getElementById("met-already-recorded").classList.remove("hidden");
         document.getElementById("met-simpan-btn").disabled = true;
+        const bayarBtnExisting = document.getElementById("met-bayar-btn");
+        if (bayarBtnExisting) bayarBtnExisting.disabled = true;
 
         if (lastMeter) {
           document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
@@ -587,7 +603,7 @@ function hitungPemakaian() {
   document.getElementById("met-total").textContent   = rp(total);
 }
 
-async function simpanMeteran() {
+async function simpanMeteran(lanjutBayar = false) {
   if (!selPelMet) { showToast("Pilih pelanggan dahulu", "error"); return; }
 
   const lalu  = parseFloat(document.getElementById("met-lalu").value);
@@ -595,47 +611,94 @@ async function simpanMeteran() {
 
   if (isNaN(lalu) || isNaN(jalan))  { showToast("Isi meter bulan lalu & berjalan", "error"); return; }
   if (jalan < lalu)                  { showToast("Meter berjalan tidak boleh lebih kecil dari bulan lalu", "error"); return; }
-  if (jalan === lalu)                { showToast("Pemakaian 0 m³ — periksa kembali angka meteran", "error"); return; }
 
-  const btn = document.getElementById("met-simpan-btn");
-  btn.disabled    = true;
-  btn.textContent = "Menyimpan…";
+  const btnSimpan = document.getElementById("met-simpan-btn");
+  const btnBayar  = document.getElementById("met-bayar-btn");
+  const activeBtn = lanjutBayar && btnBayar ? btnBayar : btnSimpan;
+
+  btnSimpan.disabled = true;
+  if (btnBayar) btnBayar.disabled = true;
+  activeBtn.textContent = lanjutBayar ? "Menyimpan tagihan…" : "Menyimpan…";
+
+  const pemakaian = Math.max(0, jalan - lalu);
+  const tagihan   = pemakaian * 1500;
+  const admin     = 5000;
+  const total     = tagihan + admin;
 
   try {
     const ts = Date.now();
+    const idMeteran   = `MET-${ts}`;
+    const idTransaksi = `TRX-${ts}`;
+
+    const payload = {
+      id_meteran    : idMeteran,
+      id_transaksi  : idTransaksi,
+      id_pelanggan  : selPelMet.id_pelanggan,
+      no_rumah      : selPelMet.no_rumah,
+      nama          : selPelMet.nama,
+      bulan         : BULAN_INI,
+      tahun         : TAHUN_INI,
+      meter_lalu    : lalu,
+      meter_berjalan: jalan,
+      petugas       : session?.nama || "",
+    };
+
     const res = await api({
       action: "saveMeteran",
       token:  session?.token,
-      data: {
-        id_meteran    : `MET-${ts}`,
-        id_transaksi  : `TRX-${ts}`,
-        id_pelanggan  : selPelMet.id_pelanggan,
-        no_rumah      : selPelMet.no_rumah,
-        nama          : selPelMet.nama,
-        bulan         : BULAN_INI,
-        tahun         : TAHUN_INI,
-        meter_lalu    : lalu,
-        meter_berjalan: jalan,
-        petugas       : session?.nama || "",
-      }
+      data:   payload,
     });
 
     if (res.status === "ok") {
-      showToast("Data meteran disimpan ✓", "success");
-      resetMeteranForm();
-      loadDashboard(); // refresh dashboard stats
+      currentPel = selPelMet;
+      currentTrx = {
+        id_transaksi : idTransaksi,
+        id_meteran   : idMeteran,
+        id_pelanggan : selPelMet.id_pelanggan,
+        no_rumah     : selPelMet.no_rumah,
+        nama         : selPelMet.nama,
+        bulan        : BULAN_INI,
+        tahun        : TAHUN_INI,
+        pemakaian,
+        tagihan,
+        admin,
+        jumlah_bayar : total,
+        status       : "Belum Bayar",
+        tgl_bayar    : "",
+      };
+      currentPeriode = { bulan: BULAN_INI, tahun: TAHUN_INI };
+      fromPage = "meteran";
+
+      if (lanjutBayar) {
+        showToast("Data meteran disimpan. Lanjut pembayaran.", "success");
+        openModal();
+      } else {
+        showToast("Data meteran disimpan ✓", "success");
+        resetMeteranForm();
+        loadDashboard();
+      }
     } else {
       showToast(res.message || "Gagal menyimpan", "error");
+      btnSimpan.disabled = false;
+      if (btnBayar) btnBayar.disabled = false;
     }
   } catch (err) {
     console.error("SaveMeteran:", err);
     showToast("Gagal menyimpan data meteran", "error");
+    btnSimpan.disabled = false;
+    if (btnBayar) btnBayar.disabled = false;
   } finally {
-    btn.disabled   = false;
-    btn.innerHTML  = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+    btnSimpan.innerHTML  = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
       <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" stroke="currentColor" stroke-width="2"/>
       <polyline points="17 21 17 13 7 13 7 21" stroke="currentColor" stroke-width="2"/>
     </svg> Simpan Data Meteran`;
+
+    if (btnBayar) {
+      btnBayar.innerHTML = `<svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"
+          stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg> Terima Pembayaran`;
+    }
   }
 }
 
@@ -765,6 +828,7 @@ async function konfirmasiBayar() {
     closeModal();
     if (res.status === "ok") {
       showToast("Pembayaran berhasil dicatat ✓", "success");
+      loadDashboard();
       // Reload detail halaman yang sama
       setTimeout(() => openDetail(currentPel.id_pelanggan, fromPage, currentPeriode.bulan, currentPeriode.tahun), 400);
     } else {
