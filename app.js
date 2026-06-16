@@ -520,13 +520,23 @@ async function pilihPelMet(id) {
   try {
     const lapRes = await api({ action: "getLaporan", token: session?.token, bulan: BULAN_INI, tahun: TAHUN_INI });
     if (lapRes.status === "ok") {
-      const existing = lapRes.detail?.find(t => t.id_pelanggan === id);
+      // getLaporan() sekarang juga mengembalikan baris virtual "Belum Dicatat".
+      // Baris virtual tidak boleh dianggap sebagai data meteran yang sudah tersimpan.
+      const existing = (lapRes.detail || []).find(t =>
+        t.id_pelanggan === id &&
+        t.id_meteran &&
+        t.id_transaksi &&
+        t.status !== "Belum Dicatat" &&
+        !t.is_unrecorded &&
+        t.bulan === BULAN_INI &&
+        String(t.tahun) === String(TAHUN_INI)
+      );
+
       if (existing) {
-        // Sudah tercatat — tampilkan data existing, semua input disabled
+        // Sudah tercatat pada periode berjalan. Tampilkan data existing dan kunci input.
         document.getElementById("met-already-recorded").classList.remove("hidden");
         document.getElementById("met-simpan-btn").disabled = true;
 
-        // Tampilkan meter bulan lalu (dari lastMeter) dan meter berjalan (dari existing)
         if (lastMeter) {
           document.getElementById("met-lalu").value = lastMeter.meter_berjalan;
           document.getElementById("met-lalu-hint").textContent =
@@ -536,12 +546,12 @@ async function pilihPelMet(id) {
           document.getElementById("met-last-nilai").textContent = lastMeter.meter_berjalan;
           document.getElementById("met-last-info").classList.remove("hidden");
         }
-        // Tampilkan meter berjalan bulan ini (hitung balik dari pemakaian + lalu)
+
         const meterBerjalan = lastMeter
           ? lastMeter.meter_berjalan + (existing.pemakaian || 0)
           : (existing.pemakaian || 0);
+
         document.getElementById("met-jalan").value = meterBerjalan;
-        // Disable kedua field
         document.getElementById("met-lalu").setAttribute("readonly", true);
         document.getElementById("met-jalan").setAttribute("readonly", true);
         hitungPemakaian();
