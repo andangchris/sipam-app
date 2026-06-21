@@ -428,3 +428,77 @@ html, body {
 .alert-amber    { background: var(--c-amber-l); border: 1.5px solid var(--c-amber); color: var(--c-amber); }
 .alert-red      { background: var(--c-red-l);   border: 1.5px solid var(--c-red);   color: var(--c-red); }
 .alert svg      { flex-shrink: 0; width: 18px; height: 18px; }
+
+/* ── KONTROL GANTI METER / AUDIT ───────────────────────── */
+.hidden { display: none !important; }
+
+.ganti-meter-panel {
+  border: 1.5px solid var(--c-amber);
+  background: rgba(254, 243, 199, .45);
+  border-radius: var(--r-card);
+  padding: 14px;
+  margin-bottom: 14px;
+}
+
+.ganti-meter-panel .form-group { margin-bottom: 12px; }
+.ganti-meter-panel textarea.form-input { resize: vertical; min-height: 72px; line-height: 1.45; }
+
+.audit-mini {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--c-text2);
+}
+
+.audit-mini span {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid rgba(0,0,0,.08);
+  padding-top: 4px;
+}
+
+#met-bayar-note {
+  margin-top: 2px;
+}
+
+@media (min-width: 520px) {
+  .audit-mini { grid-template-columns: repeat(3, 1fr); }
+  .audit-mini span { display: block; }
+}
+
+
+/* ── ADMIN APPROVAL GANTI METER ───────────────────────── */
+.approval-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--c-border);
+}
+.approval-item:last-child { border-bottom: none; }
+.approval-main { margin-bottom: 10px; }
+.approval-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+.approval-metrics span {
+  background: var(--c-surface2);
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  padding: 5px 8px;
+  font-size: 11px;
+  color: var(--c-text2);
+}
+.approval-note {
+  margin-top: 6px;
+  font-size: 11px;
+  color: var(--c-text2);
+  word-break: break-word;
+}
+.approval-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.approval-actions .btn { margin-top: 0; width: auto; }

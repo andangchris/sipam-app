@@ -86,6 +86,16 @@
       </div>
     </div>
 
+    <div class="card hidden" id="admin-approval-card">
+      <div class="card-header">
+        <span class="card-title">Approval Ganti Meter</span>
+        <span class="badge badge-amber" id="admin-approval-count">—</span>
+      </div>
+      <div class="card-body" id="admin-approval-list">
+        <div class="loading"><div class="spinner"></div> Memuat approval…</div>
+      </div>
+    </div>
+
     <div class="card">
       <div class="card-header"><span class="card-title">Tagihan Belum Bayar</span></div>
       <div class="card-body" id="dash-belum-list">
@@ -197,6 +207,66 @@
           <div>Belum ada riwayat meteran. Isi meter bulan lalu secara manual.</div>
         </div>
 
+
+        <!-- Opsi: ganti meter dengan kontrol audit -->
+        <div class="alert alert-amber hidden" id="met-reset-wrap" style="align-items:flex-start;">
+          <input id="met-reset-meter" type="checkbox" onchange="toggleGantiMeter()" style="margin-top:3px;width:18px;height:18px;flex-shrink:0;"/>
+          <label for="met-reset-meter" style="display:block;cursor:pointer;line-height:1.45;">
+            <strong>Meteran diganti / reset ke 0</strong><br>
+            Aktifkan hanya jika meter lama benar-benar diganti. Sistem akan meminta data audit agar pemakaian lama tidak hilang.
+          </label>
+        </div>
+
+        <div class="ganti-meter-panel hidden" id="met-ganti-detail">
+          <div class="section-label" style="margin-bottom:8px;">Kontrol Pergantian Meter</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Meter Akhir Lama</label>
+              <input class="form-input" id="met-akhir-lama" type="number" inputmode="numeric" placeholder="0" oninput="hitungPemakaian()"/>
+              <div class="form-hint">m³ — angka terakhir sebelum meter lama dilepas</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Meter Awal Baru</label>
+              <input class="form-input" id="met-awal-baru" type="number" inputmode="numeric" placeholder="0" oninput="hitungPemakaian()"/>
+              <div class="form-hint">m³ — biasanya 0</div>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">No Meter Lama</label>
+              <input class="form-input" id="met-no-lama" type="text" placeholder="Opsional"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">No Meter Baru</label>
+              <input class="form-input" id="met-no-baru" type="text" placeholder="Wajib diisi"/>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Alasan Ganti Meter</label>
+            <select class="form-input" id="met-alasan-ganti">
+              <option value="">Pilih alasan</option>
+              <option>Meter rusak</option>
+              <option>Meter pecah</option>
+              <option>Meter buram/tidak terbaca</option>
+              <option>Meter hilang</option>
+              <option>Pergantian program</option>
+              <option>Lainnya</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Bukti / Link Foto</label>
+            <input class="form-input" id="met-bukti-ganti" type="text" placeholder="Tempel link foto jika ada"/>
+          </div>
+
+          <div class="form-group" style="margin-bottom:0;">
+            <label class="form-label">Catatan Petugas</label>
+            <textarea class="form-input" id="met-catatan-ganti" rows="2" placeholder="Contoh: meter lama dilepas karena rusak, angka akhir 705"></textarea>
+          </div>
+        </div>
+
         <div class="form-row">
           <div class="form-group">
             <label class="form-label">Meter Bulan Lalu</label>
@@ -205,17 +275,19 @@
             <div class="form-hint" id="met-lalu-hint">m³</div>
           </div>
           <div class="form-group">
-            <label class="form-label">Meter Berjalan</label>
+            <label class="form-label" id="met-jalan-label">Meter Berjalan</label>
             <input class="form-input" id="met-jalan" type="number" inputmode="numeric"
               placeholder="0" oninput="hitungPemakaian()"/>
-            <div class="form-hint">m³ — baca dari alat</div>
+            <div class="form-hint" id="met-jalan-hint">m³ — baca dari alat</div>
           </div>
         </div>
 
         <!-- Kalkulasi otomatis -->
         <div class="card" style="background:var(--c-primary-l);border-color:var(--c-primary);margin-bottom:14px;">
           <div class="card-body" style="padding:12px 14px;">
-            <div class="info-row" style="padding:6px 0;"><span class="lbl">Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
+            <div class="info-row hidden" id="met-pakai-lama-row" style="padding:6px 0;"><span class="lbl">Pemakaian Meter Lama</span><span class="val" id="met-pakai-lama">0 m³</span></div>
+            <div class="info-row hidden" id="met-pakai-baru-row" style="padding:6px 0;"><span class="lbl">Pemakaian Meter Baru</span><span class="val" id="met-pakai-baru">0 m³</span></div>
+            <div class="info-row" style="padding:6px 0;"><span class="lbl">Total Pemakaian</span><span class="val big" id="met-pakai">0 m³</span></div>
             <div class="info-row" style="padding:6px 0;"><span class="lbl">Tagihan Air</span><span class="val" id="met-tagihan">Rp 0</span></div>
             <div class="info-row" style="padding:6px 0;"><span class="lbl">Biaya Admin</span><span class="val">Rp 5.000</span></div>
             <div class="info-row" style="padding:6px 0;border-bottom:none;">
@@ -223,6 +295,11 @@
               <span class="val total" id="met-total">Rp 5.000</span>
             </div>
           </div>
+        </div>
+
+        <div class="alert alert-amber hidden" id="met-bayar-note" style="align-items:flex-start;">
+          <svg fill="none" viewBox="0 0 24 24"><path d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          <div><strong>Approval wajib.</strong><br>Untuk ganti meter, petugas hanya bisa simpan data. Pembayaran dibuka setelah admin menyetujui.</div>
         </div>
 
         <button class="btn btn-primary" id="met-simpan-btn" onclick="simpanMeteran(false)">
@@ -286,6 +363,13 @@
           <svg width="16" height="16" fill="none" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="2"/><path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
           Tampilkan Laporan
         </button>
+        <button class="btn btn-green" id="btn-export-laporan" onclick="exportLaporanExcel()">
+          <svg width="16" height="16" fill="none" viewBox="0 0 24 24">
+            <path d="M12 3v12m0 0l-4-4m4 4l4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 19h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Export Excel
+        </button>
       </div>
     </div>
 
@@ -294,6 +378,8 @@
       <div class="stat-box"><div class="stat-label">Lunas</div><div class="stat-val green" id="lap-lunas">—</div></div>
       <div class="stat-box"><div class="stat-label">Belum Bayar</div><div class="stat-val red" id="lap-belum">—</div></div>
       <div class="stat-box"><div class="stat-label">Terkumpul</div><div class="stat-val sm green" id="lap-terkumpul">—</div></div>
+      <div class="stat-box"><div class="stat-label">Subsidi</div><div class="stat-val sm red" id="lap-subsidi">—</div></div>
+      <div class="stat-box"><div class="stat-label">Penyetoran</div><div class="stat-val sm blue" id="lap-setoran">—</div></div>
     </div>
 
     <div class="card">
@@ -349,6 +435,7 @@
         <div class="info-row"><span class="lbl" style="font-weight:700;">Total Bayar</span><span class="val total" id="detail-total">—</span></div>
       </div>
     </div>
+    <div id="detail-audit"></div>
     <div id="detail-actions"></div>
   </div>
 </div>
@@ -391,6 +478,7 @@
 <!-- Toast notification -->
 <div class="toast" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
